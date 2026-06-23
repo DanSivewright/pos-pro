@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pos-pro · Control Tower — Twenty Variations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap"
+      rel="stylesheet"
+    >
+    <style>
+    /* ============================================================
+                                                                                                       pos-pro Control Tower · three Twenty-derived variations
+                                                                                                       A = Faithful  ·  B = Experimental (ops-heat)  ·  C = Minimal
+                                                                                                       Status colours (red/amber/green) are domain semantics only.
+                                                                                                       Money is rendered with tabular Geist Mono.
+                                                                                                       ============================================================ */
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+    }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #1a1a1a;
+      background: #0b0b0c;
+    }
+    .num {
+      /* Twenty renders figures in the same sans, just tabular */
+      font-feature-settings:
+        "tnum" 1,
+        "cv01" 1;
+      letter-spacing: -0.005em;
+    }
+    .ml {
+      /* micro-label */
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    /* ---------- Switcher chrome ---------- */
+    .switcher {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      padding: 14px 28px;
+      color: #e7e7e7;
+      background: #0b0b0c;
+      border-bottom: 1px solid #1d1d1f;
+    }
+    .switcher .brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .switcher .brand .mark {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      font-family: "Geist Mono";
+      font-size: 13px;
+      font-weight: 600;
+      color: #0b0b0c;
+      background: #fff;
+      border-radius: 7px;
+    }
+    .switcher .tabs {
+      display: flex;
+      gap: 6px;
+      margin-left: 10px;
+    }
+    .switcher button {
+      padding: 7px 13px;
+      font: inherit;
+      font-size: 12.5px;
+      color: #9a9a9d;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid #232325;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+    .switcher button .k {
+      margin-right: 7px;
+      font-family: "Geist Mono";
+      opacity: 0.55;
+    }
+    .switcher button:hover {
+      color: #e7e7e7;
+      border-color: #34343a;
+    }
+    .switcher button.active {
+      color: #0b0b0c;
+      background: #fff;
+      border-color: #fff;
+    }
+    .switcher .spacer {
+      flex: 1;
+    }
+    .switcher .note {
+      font-size: 11.5px;
+      color: #6a6a6e;
+    }
+
+    /* ---------- Panel host ---------- */
+    .stage {
+      padding: 26px;
+    }
+    .panel {
+      display: none;
+    }
+    .panel.active {
+      display: block;
+    }
+    .frame {
+      width: 1320px;
+      max-width: 100%;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 14px;
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
+    }
+
+    /* shared status dot */
+    .dot {
+      display: inline-block;
+      flex: none;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* store glyph (the lone "favicon" colour, Twenty-style) */
+    .glyph {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      font-family: "Geist Mono";
+      font-size: 10px;
+      font-weight: 600;
+      color: #fff;
+      border-radius: 6px;
+    }
+
+    /* completeness pips */
+    .pips {
+      display: inline-flex;
+      gap: 3px;
+    }
+    .pip {
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+    }
+
+    /* =========================================================
+                                                                                                       VARIATION A — FAITHFUL (Twenty-true)
+                                                                                                       ========================================================= */
+    .a {
+      --paper: #ffffff;
+      --shell: #f3f2f0;
+      --panel: #fbfbfa;
+      --ink: #1a1a1a;
+      --muted: #8a8a8e;
+      --faint: #b4b4b8;
+      --line: #e7e6e3;
+      --line2: #f3f3f2;
+      --accent: #5b50e8;
+      --red: #c8102e;
+      --amber: #d97706;
+      --green: #2e9e5b;
+      display: grid;
+      grid-template-columns: 232px 1fr;
+      height: 840px;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--shell);
+    }
+    .a .side {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 12px;
+      background: transparent;
+    }
+    .a .side .top {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 4px 6px 14px;
+    }
+    .a .side .top .mk {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--ink);
+      border-radius: 7px;
+    }
+    .a .side .top .nm {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .a .side .top .nm small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .a .search {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 9px;
+      margin-bottom: 14px;
+      font-size: 12.5px;
+      color: var(--faint);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .a .search .kbd {
+      padding: 1px 5px;
+      margin-left: auto;
+      font-size: 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+    }
+    .a .sec-label {
+      padding: 10px 8px 5px;
+      color: var(--faint);
+    }
+    .a .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .a .nav a {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 6px 8px;
+      color: #43434a;
+      text-decoration: none;
+      cursor: pointer;
+      border-radius: 7px;
+    }
+    .a .nav a .ic {
+      width: 15px;
+      height: 15px;
+      opacity: 0.55;
+    }
+    .a .nav a.on {
+      font-weight: 500;
+      color: var(--accent);
+      background: #efeefb;
+    }
+    .a .nav a.on .ic {
+      opacity: 1;
+    }
+    .a .nav a:hover:not(.on) {
+      background: #f1f1ef;
+    }
+    .a .nav a .count {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--faint);
+    }
+    .a .side .foot {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 8px;
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+    }
+    .a .side .foot .av {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #5b50e8, #9b6cff);
+      border-radius: 50%;
+    }
+    .a .side .foot .who {
+      font-size: 12px;
+    }
+    .a .side .foot .who small {
+      display: block;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .a .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding-left: 4px;
+    }
+    .a .bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 13px 18px 14px 4px;
+    }
+    /* The white records surface floats inside the joined grey chrome. */
+    .a .canvas {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+    }
+    .a .bar .h {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .a .bar .h .oi {
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      font-size: 11px;
+      color: #fff;
+      background: var(--ink);
+      border-radius: 5px;
+    }
+    .a .bar .month {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 5px 9px;
+      font-size: 12.5px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .a .bar .spacer {
+      flex: 1;
+    }
+    .a .bar .ghost {
+      padding: 6px 11px;
+      font-size: 12.5px;
+      color: #43434a;
+      cursor: pointer;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .a .bar .ghost:hover {
+      background: var(--panel);
+    }
+    .a .bar .primary {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 7px 13px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #fff;
+      cursor: pointer;
+      background: var(--accent);
+      border: none;
+      border-radius: 7px;
+    }
+
+    .a .summary {
+      display: flex;
+      gap: 10px;
+      padding: 14px 20px 4px;
+    }
+    .a .stat {
+      flex: 1;
+      padding: 13px 15px;
+      background: var(--shell);
+      border-radius: 10px;
+    }
+    .a .stat .ml {
+      color: var(--faint);
+    }
+    .a .stat .big {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      margin-top: 7px;
+      font-size: 25px;
+      font-weight: 600;
+    }
+    .a .stat .sub {
+      margin-top: 3px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .a .stat.warn .big {
+      color: var(--red);
+    }
+
+    .a .toolrow {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 14px 20px 8px;
+      color: var(--muted);
+    }
+    .a .toolrow .view {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .a .toolrow .chip {
+      padding: 4px 9px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .a .toolrow .spacer {
+      flex: 1;
+    }
+
+    .a table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .a thead th {
+      padding: 7px 20px;
+      font-weight: 400;
+      color: var(--faint);
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .a thead th.r {
+      text-align: right;
+    }
+    .a tbody td {
+      padding: 10px 20px;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--line2);
+    }
+    .a tbody tr:hover {
+      background: var(--panel);
+    }
+    .a td.r {
+      text-align: right;
+    }
+    .a .store {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .a .store .nmn {
+      font-weight: 500;
+    }
+    .a .store .sub {
+      font-size: 11px;
+      color: var(--faint);
+    }
+    .a .pill {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 3px 9px 3px 8px;
+      font-size: 11.5px;
+      font-weight: 500;
+      border-radius: 999px;
+    }
+    .a .pill.red {
+      color: var(--red);
+      background: #fcecef;
+    }
+    .a .pill.amber {
+      color: #b45309;
+      background: #fdf1e3;
+    }
+    .a .pill.green {
+      color: #1f7a44;
+      background: #e9f6ee;
+    }
+    .a .delta.neg {
+      color: var(--red);
+    }
+    .a .delta.pos {
+      color: var(--green);
+    }
+    .a .muted {
+      color: var(--muted);
+    }
+
+    /* =========================================================
+                                                                                                       VARIATION B — EXPERIMENTAL (ops-heat / charcoal)
+                                                                                                       ========================================================= */
+    .b {
+      --bg: #161616;
+      --panel: #1c1c1d;
+      --card: #1f1f20;
+      --ink: #f4f3ef;
+      --muted: #8e8e88;
+      --faint: #5d5d5a;
+      --line: #2a2a2b;
+      --ember: #ff5a1f;
+      --red: #ff4d5e;
+      --amber: #ffb23e;
+      --green: #45d483;
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      height: 840px;
+      font-size: 13px;
+      color: var(--ink);
+      background:
+        radial-gradient(
+          120% 80% at 80% -10%,
+          rgba(255, 90, 31, 0.1),
+          transparent 55%
+        ),
+        var(--bg);
+    }
+    .b .side {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 16px 12px;
+      border-right: 1px solid var(--line);
+    }
+    .b .side .top {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 2px 6px 16px;
+    }
+    .b .side .top .mk {
+      display: grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      font-family: "Geist Mono";
+      font-size: 12px;
+      font-weight: 700;
+      color: #160d06;
+      background: var(--ember);
+      border-radius: 8px;
+    }
+    .b .side .top .nm {
+      font-weight: 600;
+    }
+    .b .side .top .nm small {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .b .side .sec-label {
+      padding: 14px 8px 6px;
+      color: var(--faint);
+    }
+    .b .nav a {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 7px 9px;
+      color: #c9c9c2;
+      text-decoration: none;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .b .nav a .ic {
+      width: 15px;
+      height: 15px;
+      opacity: 0.5;
+    }
+    .b .nav a.on {
+      color: #fff;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 90, 31, 0.16),
+        rgba(255, 90, 31, 0.03)
+      );
+      box-shadow: inset 2px 0 0 var(--ember);
+    }
+    .b .nav a.on .ic {
+      opacity: 1;
+    }
+    .b .nav a:hover:not(.on) {
+      background: #242425;
+    }
+    .b .nav a .count {
+      margin-left: auto;
+      font-family: "Geist Mono";
+      font-size: 11px;
+      color: var(--faint);
+    }
+    .b .side .foot {
+      padding: 10px 8px 2px;
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    .b .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .b .bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 22px;
+    }
+    .b .bar h1 {
+      margin: 0;
+      font-family: "Fraunces";
+      font-size: 21px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .b .bar .month {
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .b .bar .spacer {
+      flex: 1;
+    }
+    .b .bar .primary {
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #160d06;
+      cursor: pointer;
+      background: var(--ember);
+      border: none;
+      border-radius: 8px;
+    }
+    .b .bar .ghost {
+      padding: 7px 12px;
+      font-size: 12.5px;
+      color: #c9c9c2;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .b .body {
+      padding: 4px 22px 22px;
+      overflow: auto;
+    }
+    /* hero spotlight */
+    .b .spot {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr auto;
+      gap: 26px;
+      align-items: center;
+      padding: 22px 24px;
+      margin-bottom: 18px;
+      background:
+        radial-gradient(
+          90% 140% at 100% 0%,
+          rgba(255, 77, 94, 0.16),
+          transparent 60%
+        ),
+        linear-gradient(180deg, #1d1d1e, #19191a);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .b .spot .lab {
+      color: var(--red);
+    }
+    .b .spot .store {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 9px;
+    }
+    .b .spot .store .nm {
+      font-family: "Fraunces";
+      font-size: 27px;
+      font-weight: 500;
+    }
+    .b .spot .store .sub {
+      margin-top: 1px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .b .spot .metric .ml {
+      color: var(--faint);
+    }
+    .b .spot .metric .v {
+      margin-top: 5px;
+      font-family: "Fraunces";
+      font-size: 31px;
+      font-weight: 500;
+    }
+    .b .spot .metric .v.red {
+      color: var(--red);
+    }
+    .b .spot .metric .d {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .b .spot .cta {
+      padding: 9px 15px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #160d06;
+      white-space: nowrap;
+      cursor: pointer;
+      background: #fff;
+      border: none;
+      border-radius: 9px;
+    }
+
+    .b .grid-h {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 6px 2px 12px;
+      color: var(--muted);
+    }
+    .b .grid-h .ml {
+      color: var(--faint);
+    }
+    .b .grid-h .spacer {
+      flex: 1;
+    }
+    .b .heat {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .b .hc {
+      position: relative;
+      padding: 15px 16px;
+      overflow: hidden;
+      cursor: pointer;
+      background: linear-gradient(180deg, #1e1e1f, #1a1a1b);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      transition:
+        transform 0.12s ease,
+        border-color 0.12s ease;
+    }
+    .b .hc:hover {
+      border-color: #3a3a3b;
+      transform: translateY(-2px);
+    }
+    .b .hc::before {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      content: "";
+    }
+    .b .hc.red::before {
+      background: var(--red);
+      box-shadow: 0 0 18px var(--red);
+    }
+    .b .hc.amber::before {
+      background: var(--amber);
+      box-shadow: 0 0 18px var(--amber);
+    }
+    .b .hc.green::before {
+      background: var(--green);
+    }
+    .b .hc .row1 {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+    .b .hc .row1 .nm {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+    .b .hc .row1 .st {
+      margin-left: auto;
+    }
+    .b .hc .net {
+      margin: 12px 0 2px;
+      font-family: "Fraunces";
+      font-size: 23px;
+      font-weight: 500;
+    }
+    .b .hc .vs {
+      font-size: 11.5px;
+    }
+    .b .hc .vs.neg {
+      color: var(--red);
+    }
+    .b .hc .vs.pos {
+      color: var(--green);
+    }
+    .b .hc .spark {
+      margin: 11px 0 9px;
+    }
+    .b .hc .mini {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 9px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+    .b .hc .mini .num {
+      color: var(--ink);
+    }
+    .b .tag {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 2px 7px;
+      font-size: 10.5px;
+      border-radius: 999px;
+    }
+    .b .tag.red {
+      color: var(--red);
+      background: rgba(255, 77, 94, 0.14);
+    }
+    .b .tag.amber {
+      color: var(--amber);
+      background: rgba(255, 178, 62, 0.14);
+    }
+    .b .tag.green {
+      color: var(--green);
+      background: rgba(69, 212, 131, 0.13);
+    }
+
+    /* =========================================================
+                                                                                                       VARIATION C — VERY MINIMAL
+                                                                                                       ========================================================= */
+    .c {
+      --paper: #fcfcfb;
+      --ink: #141414;
+      --muted: #9a9a98;
+      --faint: #c4c4c1;
+      --hair: #f0efed;
+      --red: #c8102e;
+      --amber: #c2790a;
+      --green: #2e9e5b;
+      display: flex;
+      flex-direction: column;
+      height: 840px;
+      padding: 0;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .c .wrap {
+      width: 880px;
+      max-width: 100%;
+      padding: 56px 0 40px;
+      margin: 0 auto;
+    }
+    .c .top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 42px;
+    }
+    .c .top .ttl {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .c .top .ttl small {
+      display: block;
+      margin-top: 4px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .c .top .ttl small .num {
+      color: var(--ink);
+    }
+    .c .top .month {
+      color: var(--muted);
+    }
+    .c .legend {
+      display: flex;
+      gap: 22px;
+      margin: 0 0 30px;
+    }
+    .c .legend span {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+    }
+    .c .legend b {
+      font-family: "Geist Mono";
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .c .row {
+      display: grid;
+      grid-template-columns: 18px 1.6fr 1fr 1fr 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 19px 4px;
+      border-top: 1px solid var(--hair);
+    }
+    .c .row:hover {
+      background: #fafaf8;
+    }
+    .c .row.head {
+      padding-bottom: 11px;
+      color: var(--faint);
+      border-top: none;
+    }
+    .c .row .nm {
+      font-size: 15px;
+      font-weight: 400;
+    }
+    .c .row .nm small {
+      display: block;
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .c .row .net {
+      font-family: "Geist Mono";
+      font-size: 21px;
+      font-weight: 300;
+      text-align: right;
+      letter-spacing: -0.02em;
+    }
+    .c .row .met {
+      text-align: right;
+    }
+    .c .row .met .num {
+      font-weight: 400;
+    }
+    .c .row .met small {
+      display: block;
+      margin-top: 3px;
+      font-size: 10.5px;
+      color: var(--faint);
+      letter-spacing: 0.04em;
+    }
+    .c .row .met .neg {
+      color: var(--red);
+    }
+    .c .row .met .pos {
+      color: var(--green);
+    }
+    .c .head .r {
+      text-align: right;
+    }
+    .c .foot {
+      margin-top: 34px;
+      font-size: 11.5px;
+      color: var(--faint);
+    }
+    </style>
+  </head>
+  <body>
+    <div class="switcher">
+      <div class="brand">
+        <span class="mark">P</span>
+        pos-pro
+        <span style="color:#5d5d5f;font-weight:400">· Control Tower</span>
+      </div>
+      <div class="tabs">
+        <button data-go="a" class="active">
+          <span class="k">A</span>Faithful
+        </button>
+        <button data-go="b"><span class="k">B</span>Experimental</button>
+        <button data-go="c"><span class="k">C</span>Minimal</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="note">
+        Twenty-derived · June 2026 · figures anchored on real reference data
+      </div>
+    </div>
+
+    <div class="stage">
+      <!-- ============== A · FAITHFUL ============== -->
+      <section class="panel active" id="panel-a">
+        <div class="frame a">
+          <aside class="side">
+            <div class="top">
+              <span class="mk">P</span
+              ><span class="nm">pos-pro<small>Romans · Gauteng</small></span>
+            </div>
+            <div class="search">
+              <span>⌕</span>
+              Search stores<span class="kbd">⌘K</span>
+            </div>
+            <div class="ml sec-label">Pinned</div>
+            <nav class="nav">
+              <a
+                ><span class="ic">★</span>
+                Mamelodi East
+                <span
+                  class="dot"
+                  style="background:#c8102e;margin-left:auto"
+                ></span></a
+              >
+              <a
+                ><span class="ic">★</span>
+                Boitumelo
+                <span
+                  class="dot"
+                  style="background:#d97706;margin-left:auto"
+                ></span></a
+              >
+            </nav>
+            <div class="ml sec-label">Workspace</div>
+            <nav class="nav">
+              <a class="on"><span class="ic">▦</span> Control Tower</a>
+              <a
+                ><span class="ic">▤</span>
+                Stores <span class="count">24</span></a
+              >
+              <a
+                ><span class="ic">↥</span>
+                Uploads <span class="count">6</span></a
+              >
+              <a><span class="ic">◫</span> Reports</a>
+              <a><span class="ic">✉</span> Digests</a>
+              <a><span class="ic">⚙</span> Settings</a>
+            </nav>
+            <div class="foot">
+              <span class="av"></span
+              ><span class="who">Jordan B.<small>Super-user</small></span>
+            </div>
+          </aside>
+
+          <div class="main">
+            <div class="bar">
+              <div class="h"><span class="oi">▦</span> Control Tower</div>
+              <div class="month">◷ June 2026 ▾</div>
+              <div class="spacer"></div>
+              <button class="ghost">Filter</button>
+              <button class="ghost">Sort</button>
+              <button class="ghost">⋯</button>
+              <button class="primary">＋ Upload reports</button>
+            </div>
+
+            <div class="canvas">
+              <div class="summary">
+                <div class="stat warn">
+                  <div class="ml">Exceptions today</div>
+                  <div class="big num">
+                    4
+                    <span
+                      style="font-size:13px;color:var(--muted);font-weight:400"
+                      >of 24 stores</span
+                    >
+                  </div>
+                  <div class="sub">
+                    2 critical · 2 watch — worst-first below
+                  </div>
+                </div>
+                <div class="stat">
+                  <div class="ml">MTD net sales</div>
+                  <div class="big num">R3.81m</div>
+                  <div class="sub">+2.4% vs combined target</div>
+                </div>
+                <div class="stat">
+                  <div class="ml">Blended GP%</div>
+                  <div class="big num">56.8%</div>
+                  <div class="sub">food cost 43.2%</div>
+                </div>
+                <div class="stat">
+                  <div class="ml">Cash variance</div>
+                  <div class="big num">−R612</div>
+                  <div class="sub">across 24 stores, MTD</div>
+                </div>
+              </div>
+
+              <div class="toolrow">
+                <span class="view">▦ All stores</span>
+                <span class="muted num">24</span>
+                <span class="spacer"></span>
+                <span class="chip">Status ▾</span>
+                <span class="chip">Group: none ▾</span>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Store</th>
+                    <th>Status</th>
+                    <th class="r">MTD net</th>
+                    <th class="r">vs target</th>
+                    <th class="r">GP%</th>
+                    <th class="r">Cash var</th>
+                    <th>Completeness</th>
+                    <th>Last upload</th>
+                  </tr>
+                </thead>
+                <tbody id="a-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== B · EXPERIMENTAL ============== -->
+      <section class="panel" id="panel-b">
+        <div class="frame b">
+          <aside class="side">
+            <div class="top">
+              <span class="mk">P</span
+              ><span class="nm">pos-pro<small>control tower</small></span>
+            </div>
+            <div class="ml sec-label">Pinned</div>
+            <nav class="nav">
+              <a
+                ><span class="ic">★</span>
+                Mamelodi East
+                <span
+                  class="dot"
+                  style="background:#ff4d5e;margin-left:auto;box-shadow:0 0 9px #ff4d5e"
+                ></span></a
+              >
+              <a
+                ><span class="ic">★</span>
+                Boitumelo
+                <span
+                  class="dot"
+                  style="background:#ffb23e;margin-left:auto"
+                ></span></a
+              >
+            </nav>
+            <div class="ml sec-label">Workspace</div>
+            <nav class="nav">
+              <a class="on"><span class="ic">▦</span> Control Tower</a>
+              <a
+                ><span class="ic">▤</span>
+                Stores <span class="count">24</span></a
+              >
+              <a
+                ><span class="ic">↥</span>
+                Uploads <span class="count">6</span></a
+              >
+              <a><span class="ic">◫</span> Reports</a>
+              <a><span class="ic">✉</span> Digests</a>
+            </nav>
+            <div class="foot">
+              Daily digest · 06:00 SAST<br>Jordan B. — super-user
+            </div>
+          </aside>
+
+          <div class="main">
+            <div class="bar">
+              <h1>Control Tower</h1>
+              <span class="month">June 2026 ▾</span>
+              <span class="spacer"></span>
+              <button class="ghost">Filter · Sort</button>
+              <button class="primary">＋ Upload reports</button>
+            </div>
+            <div class="body">
+              <div class="spot">
+                <div>
+                  <span class="ml lab">● Worst store today</span>
+                  <div class="store">
+                    <span class="glyph" style="background:#ff4d5e">ME</span>
+                    <div>
+                      <div class="nm">Mamelodi East</div>
+                      <div class="sub">
+                        Romans Pizza · Pretoria · 24 trading days
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="metric">
+                  <span class="ml">MTD net</span>
+                  <div class="v">R198,420</div>
+                  <div class="d">target R260,000</div>
+                </div>
+                <div class="metric">
+                  <span class="ml">vs target</span>
+                  <div class="v red">−23.7%</div>
+                  <div class="d">GP 48.1% · below 50%</div>
+                </div>
+                <button class="cta">Open store →</button>
+              </div>
+
+              <div class="grid-h">
+                <span class="ml">All stores</span><span>·</span
+                ><span class="num">24</span><span class="spacer"></span
+                ><span class="ml" style="color:var(--faint)">worst-first</span>
+              </div>
+              <div class="heat" id="b-heat"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== C · MINIMAL ============== -->
+      <section class="panel" id="panel-c">
+        <div class="frame c">
+          <div class="wrap">
+            <div class="top">
+              <div class="ttl">
+                Control Tower<small
+                  ><span class="num">24</span>
+                  stores · <span class="num">4</span> need attention</small
+                >
+              </div>
+              <div class="month num">June 2026</div>
+            </div>
+            <div class="legend">
+              <span
+                ><span class="dot" style="background:#c8102e"></span>
+                <b>2</b>
+                critical</span
+              >
+              <span
+                ><span class="dot" style="background:#c2790a"></span>
+                <b>2</b>
+                watch</span
+              >
+              <span
+                ><span class="dot" style="background:#2e9e5b"></span>
+                <b>20</b>
+                on track</span
+              >
+              <span style="margin-left:auto"
+                ><b class="num">R3.81m</b>
+                net MTD</span
+              >
+            </div>
+            <div class="row head">
+              <span></span><span class="ml">Store</span
+              ><span class="ml r">MTD net</span
+              ><span class="ml r">vs target</span><span class="ml r">GP%</span>
+            </div>
+            <div id="c-rows"></div>
+            <div class="foot">
+              Stores on track are listed below the line · sorted worst-first ·
+              updated 06:14 SAST
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+    "use strict";
+    // ---- Shared store dataset (representative SA Romans roster;
+    //      Boitumelo carries the real reference figures) ----
+    const fmt = (n) => "R" + Math.abs(n).toLocaleString("en-ZA");
+    const STORES = [
+      {
+        code: "ME",
+        name: "Mamelodi East",
+        area: "Pretoria",
+        glyph: "#ff4d5e",
+        status: "red",
+        net: 198_420,
+        target: 260_000,
+        gp: 48.1,
+        cash: -420.0,
+        reports: [1, 1, 1, 0, 0],
+        last: "2h ago",
+        spark: [42, 40, 38, 41, 37, 33, 30, 28],
+      },
+      {
+        code: "SO",
+        name: "Soshanguve",
+        area: "Pretoria N",
+        glyph: "#f97316",
+        status: "red",
+        net: 211_050,
+        target: 255_000,
+        gp: 49.2,
+        cash: -12.0,
+        reports: [1, 1, 1, 1, 0],
+        last: "1h ago",
+        spark: [44, 45, 43, 40, 42, 39, 38, 36],
+      },
+      {
+        code: "BO",
+        name: "Boitumelo",
+        area: "Soshanguve",
+        glyph: "#d97706",
+        status: "amber",
+        net: 289_140,
+        target: 310_000,
+        gp: 54.3,
+        cash: -145.5,
+        reports: [1, 1, 1, 1, 1],
+        last: "22m ago",
+        spark: [48, 47, 49, 46, 48, 50, 47, 49],
+      },
+      {
+        code: "TE",
+        name: "Tembisa",
+        area: "Ekurhuleni",
+        glyph: "#ca8a04",
+        status: "amber",
+        net: 241_800,
+        target: 276_000,
+        gp: 56.0,
+        cash: 38.0,
+        reports: [1, 1, 0, 1, 1],
+        last: "3h ago",
+        spark: [50, 49, 51, 48, 47, 49, 48, 50],
+      },
+      {
+        code: "CE",
+        name: "Centurion",
+        area: "Tshwane",
+        glyph: "#16a34a",
+        status: "green",
+        net: 412_300,
+        target: 400_000,
+        gp: 61.2,
+        cash: 5.0,
+        reports: [1, 1, 1, 1, 1],
+        last: "40m ago",
+        spark: [58, 60, 59, 61, 62, 60, 63, 61],
+      },
+      {
+        code: "MI",
+        name: "Midrand",
+        area: "Johannesburg",
+        glyph: "#0ea5e9",
+        status: "green",
+        net: 367_900,
+        target: 361_000,
+        gp: 58.7,
+        cash: -22.0,
+        reports: [1, 1, 1, 0, 1],
+        last: "1h ago",
+        spark: [55, 56, 57, 56, 58, 57, 59, 58],
+      },
+      {
+        code: "PC",
+        name: "Pretoria CBD",
+        area: "Tshwane",
+        glyph: "#8b5cf6",
+        status: "green",
+        net: 298_500,
+        target: 280_000,
+        gp: 60.1,
+        cash: 14.0,
+        reports: [1, 1, 1, 1, 1],
+        last: "55m ago",
+        spark: [54, 55, 57, 58, 57, 59, 60, 61],
+      },
+      {
+        code: "HA",
+        name: "Hatfield",
+        area: "Tshwane",
+        glyph: "#0891b2",
+        status: "green",
+        net: 254_100,
+        target: 252_000,
+        gp: 59.0,
+        cash: -8.0,
+        reports: [1, 0, 1, 1, 1],
+        last: "4h ago",
+        spark: [52, 53, 52, 54, 53, 55, 54, 56],
+      },
+    ];
+    const RANK = { red: 0, amber: 1, green: 2 };
+    STORES.sort(
+      (a, b) =>
+        RANK[a.status] - RANK[b.status] || a.net / a.target - b.net / b.target
+    );
+    const REPORT_LABELS = ["Cashup", "Royalty", "GP", "Stock Var", "Wastage"];
+    const STATUS_HEX = {
+      a: { red: "#c8102e", amber: "#d97706", green: "#2e9e5b" },
+      b: { red: "#ff4d5e", amber: "#ffb23e", green: "#45d483" },
+      c: { red: "#c8102e", amber: "#c2790a", green: "#2e9e5b" },
+    };
+    const dev = (s) => s.net / s.target - 1;
+    const devTxt = (s) =>
+      (dev(s) >= 0 ? "+" : "−") + Math.abs(dev(s) * 100).toFixed(1) + "%";
+
+    // ---------- A · table rows ----------
+    document.getElementById("a-rows").innerHTML = STORES.map((s) => {
+      const pills = {
+        red: ["pill red", "● Critical"],
+        amber: ["pill amber", "● Watch"],
+        green: ["pill green", "● On track"],
+      }[s.status];
+      const pos = dev(s) >= 0;
+      const pipsHtml = s.reports
+        .map(
+          (r, i) =>
+            `<span class="pip" title="${REPORT_LABELS[i]}" style="background:${r ? "#2e9e5b" : "#e6e6e4"}"></span>`
+        )
+        .join("");
+      return `<tr>
+                                                                                                        <td><div class="store"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
+                                                                                                          <span><span class="nmn">${s.name}</span><br><span class="sub">${s.area}</span></span></div></td>
+                                                                                                        <td><span class="${pills[0]}">${pills[1]}</span></td>
+                                                                                                        <td class="r num">${fmt(s.net)}</td>
+                                                                                                        <td class="r num delta ${pos ? "pos" : "neg"}">${devTxt(s)}</td>
+                                                                                                        <td class="r num ${s.gp < 50 ? "delta neg" : ""}">${s.gp.toFixed(1)}%</td>
+                                                                                                        <td class="r num muted">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</td>
+                                                                                                        <td><span class="pips">${pipsHtml}</span></td>
+                                                                                                        <td class="muted">${s.last}</td>
+                                                                                                      </tr>`;
+    }).join("");
+
+    // ---------- B · heat cards ----------
+    function spark(data, color) {
+      const w = 120,
+        h = 30,
+        max = Math.max(...data),
+        min = Math.min(...data);
+      const pts = data
+        .map(
+          (v, i) =>
+            `${(i / (data.length - 1)) * w},${h - ((v - min) / (max - min || 1)) * h}`
+        )
+        .join(" ");
+      const last = data
+        .map((v, i) => [
+          (i / (data.length - 1)) * w,
+          h - ((v - min) / (max - min || 1)) * h,
+        ])
+        .at(-1);
+      return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+                                                                                                        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
+                                                                                                        <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.2" fill="${color}"/></svg>`;
+    }
+    document.getElementById("b-heat").innerHTML = STORES.map((s) => {
+      const hex = STATUS_HEX.b[s.status];
+      const pos = dev(s) >= 0;
+      const tagTxt = { red: "Critical", amber: "Watch", green: "On track" }[
+        s.status
+      ];
+      return `<div class="hc ${s.status}">
+                                                                                                        <div class="row1"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
+                                                                                                          <span class="nm">${s.name}</span>
+                                                                                                          <span class="st"><span class="tag ${s.status}">● ${tagTxt}</span></span></div>
+                                                                                                        <div class="net">${fmt(s.net)}</div>
+                                                                                                        <div class="vs ${pos ? "pos" : "neg"}">${devTxt(s)} vs target</div>
+                                                                                                        ${spark(s.spark, hex)}
+                                                                                                        <div class="mini"><span>GP <span class="num">${s.gp.toFixed(1)}%</span></span>
+                                                                                                          <span>cash <span class="num">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</span></span></div>
+                                                                                                      </div>`;
+    }).join("");
+
+    // ---------- C · minimal rows ----------
+    document.getElementById("c-rows").innerHTML = STORES.map((s) => {
+      const hex = STATUS_HEX.c[s.status];
+      const pos = dev(s) >= 0;
+      return `<div class="row">
+                                                                                                        <span class="dot" style="background:${hex}"></span>
+                                                                                                        <span class="nm">${s.name}<small>${s.area}</small></span>
+                                                                                                        <span class="net">${fmt(s.net)}</span>
+                                                                                                        <span class="met"><span class="num ${pos ? "pos" : "neg"}">${devTxt(s)}</span><small>VS TARGET</small></span>
+                                                                                                        <span class="met"><span class="num">${s.gp.toFixed(1)}%</span><small>GROSS PROFIT</small></span>
+                                                                                                      </div>`;
+    }).join("");
+
+    // ---------- switcher ----------
+    const panels = { a: "panel-a", b: "panel-b", c: "panel-c" };
+    document.querySelectorAll(".switcher button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const go = btn.dataset.go;
+        document
+          .querySelectorAll(".switcher button")
+          .forEach((b) => b.classList.toggle("active", b === btn));
+        Object.entries(panels).forEach(([k, id]) =>
+          document.getElementById(id).classList.toggle("active", k === go)
+        );
+        localStorage.setItem("posPanel", go);
+      });
+    });
+    const saved = localStorage.getItem("posPanel");
+    if (saved && panels[saved]) {
+      document.querySelector(`.switcher button[data-go="${saved}"]`).click();
+    }
+    </script>
+  </body>
+</html>

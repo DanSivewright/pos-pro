@@ -2,12 +2,48 @@
 
 import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
+import { Button } from "@pos-pro/ui/components/button";
+import { cn } from "@pos-pro/ui/lib/utils";
 import { useQuery } from "convex/react";
-import { use } from "react";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { type ReactNode, use } from "react";
 import { ChannelMixChart } from "@/components/channel-mix-chart";
 import { Completeness } from "@/components/completeness";
+import { Canvas, PageHeader } from "@/components/dashboard-shell";
 import { TopStockVariances } from "@/components/top-stock-variances";
 import { formatRand } from "@/lib/format";
+
+function Metric({
+  label,
+  testid,
+  emphasis,
+  children,
+}: {
+  label: string;
+  testid: string;
+  emphasis?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd
+        className={cn(
+          "mt-0.5 tabular-nums",
+          emphasis ? "font-semibold text-base" : "font-medium text-sm"
+        )}
+        data-testid={testid}
+      >
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+const rand = (cents: number | null) =>
+  cents === null ? "—" : formatRand(cents);
+const pct = (value: number | null) => (value === null ? "—" : `${value}%`);
 
 export default function StoreDrillDown({
   params,
@@ -15,92 +51,94 @@ export default function StoreDrillDown({
   params: Promise<{ storeId: string }>;
 }) {
   const { storeId } = use(params);
-  const days = useQuery(api.storeDays.listForStore, {
-    storeId: storeId as Id<"stores">,
-  });
+  const storeRef = storeId as Id<"stores">;
+  const days = useQuery(api.storeDays.listForStore, { storeId: storeRef });
+  const tiles = useQuery(api.stores.controlTower);
+  const storeName =
+    tiles?.find((tile) => tile.id === storeRef)?.name ?? "Store";
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-6">
-      <h1 className="mb-6 font-semibold text-2xl">Store Days</h1>
-      {days === undefined && <p className="text-muted-foreground">Loading…</p>}
-      {days?.length === 0 && (
-        <p className="text-muted-foreground">No Store Days yet.</p>
-      )}
-      {days !== undefined && days.length > 0 && (
-        <ul className="grid gap-3">
-          {days.map((day) => (
-            <li
-              className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
-              data-testid="store-day"
-              key={day.id}
-            >
-              <span className="font-medium">{day.date}</span>
-              <dl className="flex flex-wrap gap-6 text-sm">
-                <div>
-                  <dt className="text-muted-foreground">Net sales</dt>
-                  <dd data-testid="net-sales">
-                    {day.netSales === null ? "—" : formatRand(day.netSales)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Cash variance</dt>
-                  <dd data-testid="cash-variance">
-                    {day.cashVariance === null
-                      ? "—"
-                      : formatRand(day.cashVariance)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Royalty due</dt>
-                  <dd data-testid="royalty-due">
-                    {day.royaltyDue === null ? "—" : formatRand(day.royaltyDue)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">GP%</dt>
-                  <dd data-testid="gp-percent">
-                    {day.gpPercent === null ? "—" : `${day.gpPercent}%`}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">FC%</dt>
-                  <dd data-testid="fc-percent">
-                    {day.fcPercent === null ? "—" : `${day.fcPercent}%`}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Waste cost</dt>
-                  <dd data-testid="waste-cost">
-                    {day.wasteCost === null ? "—" : formatRand(day.wasteCost)}
-                  </dd>
-                </div>
-              </dl>
-              {day.needsReview && (
-                <span className="rounded bg-orange-100 px-2 py-1 text-orange-700 text-xs dark:bg-orange-950 dark:text-orange-300">
-                  Needs review
-                </span>
-              )}
-              <Completeness reports={day.reports} />
-              {day.channelMix !== null && (
-                <div className="w-full" data-testid="channel-mix">
-                  <p className="mb-2 text-muted-foreground text-sm">
-                    Channel mix
-                  </p>
-                  <ChannelMixChart channelMix={day.channelMix} />
-                </div>
-              )}
-              {day.itemsProvider !== null && (
-                <div className="w-full" data-testid="top-variances">
-                  <p className="mb-2 text-muted-foreground text-sm">
-                    Top stock variances
-                  </p>
-                  <TopStockVariances storeDayId={day.id} />
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <>
+      <PageHeader
+        actions={
+          <Button render={<Link href="/dashboard" />} variant="outline">
+            <ArrowLeft className="size-4" />
+            Control Tower
+          </Button>
+        }
+        title={storeName}
+      />
+      <Canvas>
+        <div className="px-4 py-4 md:px-5">
+          {days === undefined && (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          )}
+          {days?.length === 0 && (
+            <p className="text-muted-foreground text-sm">No Store Days yet.</p>
+          )}
+          {days !== undefined && days.length > 0 && (
+            <ul className="grid gap-3">
+              {days.map((day) => (
+                <li
+                  className="rounded-lg border border-border p-4 md:p-5"
+                  data-testid="store-day"
+                  key={day.id}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="font-semibold text-base tabular-nums">
+                      {day.date}
+                    </h2>
+                    {day.needsReview && (
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700 text-xs dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                        Needs review
+                      </span>
+                    )}
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                    <Metric emphasis label="Net sales" testid="net-sales">
+                      {rand(day.netSales)}
+                    </Metric>
+                    <Metric label="Cash variance" testid="cash-variance">
+                      {rand(day.cashVariance)}
+                    </Metric>
+                    <Metric label="Royalty due" testid="royalty-due">
+                      {rand(day.royaltyDue)}
+                    </Metric>
+                    <Metric label="GP%" testid="gp-percent">
+                      {pct(day.gpPercent)}
+                    </Metric>
+                    <Metric label="FC%" testid="fc-percent">
+                      {pct(day.fcPercent)}
+                    </Metric>
+                    <Metric label="Waste cost" testid="waste-cost">
+                      {rand(day.wasteCost)}
+                    </Metric>
+                  </dl>
+                  <div className="mt-4">
+                    <Completeness reports={day.reports} />
+                  </div>
+                  {day.channelMix !== null && (
+                    <div className="mt-5" data-testid="channel-mix">
+                      <p className="mb-2 text-muted-foreground text-xs">
+                        Channel mix
+                      </p>
+                      <ChannelMixChart channelMix={day.channelMix} />
+                    </div>
+                  )}
+                  {day.itemsProvider !== null && (
+                    <div className="mt-5" data-testid="top-variances">
+                      <p className="mb-2 text-muted-foreground text-xs">
+                        Top stock variances
+                      </p>
+                      <TopStockVariances storeDayId={day.id} />
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Canvas>
+    </>
   );
 }

@@ -3,21 +3,10 @@ import type { Metadata } from "next";
 
 import "../index.css";
 import { cn } from "@pos-pro/ui/lib/utils";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
-import Header from "@/components/header";
+import { Inter } from "next/font/google";
 import Providers from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "pos-pro",
@@ -35,16 +24,9 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <ClerkProvider>
-          <Providers>
-            <div className="grid h-svh grid-rows-[auto_1fr]">
-              <Header />
-              {children}
-            </div>
-          </Providers>
+          <Providers>{children}</Providers>
         </ClerkProvider>
       </body>
     </html>

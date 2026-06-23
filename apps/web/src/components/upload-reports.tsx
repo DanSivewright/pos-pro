@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@pos-pro/ui/components/button";
+import { cn } from "@pos-pro/ui/lib/utils";
+import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,9 +16,11 @@ interface FileResult {
 }
 
 const STATUS_STYLE: Record<FileResult["status"], string> = {
-  parsed: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-  failed: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-  unsupported: "bg-muted text-muted-foreground",
+  parsed:
+    "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300",
+  failed:
+    "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300",
+  unsupported: "border-border bg-muted text-muted-foreground",
 };
 
 function reportToast(result: FileResult): void {
@@ -31,12 +35,15 @@ function reportToast(result: FileResult): void {
 function ResultRow({ result }: { result: FileResult }) {
   return (
     <li
-      className="flex flex-wrap items-center gap-2 rounded border p-2 text-sm"
+      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
       data-testid="upload-result"
     >
       <span className="font-medium">{result.filename}</span>
       <span
-        className={`rounded px-2 py-0.5 text-xs ${STATUS_STYLE[result.status]}`}
+        className={cn(
+          "rounded-full border px-2 py-0.5 font-medium text-xs",
+          STATUS_STYLE[result.status]
+        )}
         data-status={result.status}
         data-testid="result-status"
       >
@@ -46,7 +53,7 @@ function ResultRow({ result }: { result: FileResult }) {
         <span className="text-muted-foreground text-xs">{result.date}</span>
       )}
       {result.needsReview && (
-        <span className="text-orange-600 text-xs dark:text-orange-400">
+        <span className="font-medium text-amber-600 text-xs dark:text-amber-400">
           needs review
         </span>
       )}
@@ -98,36 +105,48 @@ export function UploadReports() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-3">
-      <input
-        accept="application/pdf"
-        className="hidden"
-        multiple
-        onChange={(event) => {
-          const selected = event.target.files;
-          if (selected && selected.length > 0) {
-            handleFiles(selected).catch(() => {
-              toast.error("Upload failed");
-            });
-          }
-        }}
-        ref={inputRef}
-        type="file"
-      />
-      <Button
-        disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        type="button"
-      >
-        {busy ? "Uploading…" : "Upload reports"}
-      </Button>
+    <section aria-label="Upload reports" className="border-border border-b">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-5">
+        <div className="min-w-0">
+          <p className="font-medium text-sm">Upload reports</p>
+          <p className="text-muted-foreground text-xs">
+            PDF cashup, royalty, gross profit, stock variance or wastage.
+          </p>
+        </div>
+        <input
+          accept="application/pdf"
+          className="hidden"
+          multiple
+          onChange={(event) => {
+            const selected = event.target.files;
+            if (selected && selected.length > 0) {
+              handleFiles(selected).catch(() => {
+                toast.error("Upload failed");
+              });
+            }
+          }}
+          ref={inputRef}
+          type="file"
+        />
+        <Button
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+          type="button"
+        >
+          <Upload className="size-4" />
+          {busy ? "Uploading…" : "Upload PDFs"}
+        </Button>
+      </div>
       {results.length > 0 && (
-        <ul className="grid w-full gap-1" data-testid="upload-results">
+        <ul
+          className="grid gap-1.5 px-4 pb-3 md:px-5"
+          data-testid="upload-results"
+        >
           {results.map((result) => (
             <ResultRow key={result.filename} result={result} />
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
