@@ -1,3 +1,6 @@
+import { MONEY, matchMoney, parseMoney } from "./money";
+import { parseReportDate } from "./report-date";
+
 /**
  * Parses the text of a ServeUp "Store Cashup" report into the Cashup-owned
  * Store Day figures. All money is returned as integer cents; the date is a
@@ -18,55 +21,6 @@ export interface CashupExtract {
   voids: number;
 }
 
-const CENTS_PER_RAND = 100;
-
-const MONTHS: Record<string, string> = {
-  Jan: "01",
-  Feb: "02",
-  Mar: "03",
-  Apr: "04",
-  May: "05",
-  Jun: "06",
-  Jul: "07",
-  Aug: "08",
-  Sep: "09",
-  Oct: "10",
-  Nov: "11",
-  Dec: "12",
-};
-
-const MONEY = String.raw`(-?R[\d,]+\.\d{2})`;
-
-const DATE_PATTERN = /From (\w{3}) (\d{1,2}), (\d{4})/;
-
-function parseMoney(token: string): number {
-  const negative = token.startsWith("-");
-  const digits = token.replace(/[^\d.]/g, "");
-  const cents = Math.round(Number.parseFloat(digits) * CENTS_PER_RAND);
-  return negative ? -cents : cents;
-}
-
-function matchMoney(text: string, label: string, pattern: RegExp): number {
-  const found = text.match(pattern);
-  if (found === null) {
-    throw new Error(`Cashup parse failed: could not find "${label}"`);
-  }
-  return parseMoney(found[1]);
-}
-
-function parseDate(text: string): string {
-  const found = text.match(DATE_PATTERN);
-  if (found === null) {
-    throw new Error('Cashup parse failed: could not find "From <date>"');
-  }
-  const [, month, day, year] = found;
-  const monthNumber = MONTHS[month];
-  if (monthNumber === undefined) {
-    throw new Error(`Cashup parse failed: unknown month "${month}"`);
-  }
-  return `${year}-${monthNumber}-${day.padStart(2, "0")}`;
-}
-
 export function parseCashup(text: string): CashupExtract {
   const variances = text.match(
     new RegExp(`Reconciled variances\\s+${MONEY}\\s+${MONEY}`)
@@ -78,7 +32,7 @@ export function parseCashup(text: string): CashupExtract {
   }
 
   return {
-    date: parseDate(text),
+    date: parseReportDate(text),
     grossSales: matchMoney(
       text,
       "Gross Sales",

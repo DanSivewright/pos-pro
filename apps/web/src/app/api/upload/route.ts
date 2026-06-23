@@ -4,6 +4,7 @@ import { fetchMutation } from "convex/nextjs";
 import { NextResponse } from "next/server";
 import { detectReportType } from "@/lib/extraction/detect-report-type";
 import { parseCashup } from "@/lib/extraction/parse-cashup";
+import { parseRoyalty } from "@/lib/extraction/parse-royalty";
 import { extractPdfText } from "@/lib/extraction/pdf-text";
 
 // Parsing runs in this Node boundary, in memory; raw bytes are never persisted.
@@ -35,7 +36,7 @@ async function ingestFile(
   }
 
   const reportType = detectReportType(text);
-  if (reportType !== "cashup") {
+  if (reportType !== "cashup" && reportType !== "royalty") {
     return {
       filename: file.name,
       status: "unsupported",
@@ -47,6 +48,22 @@ async function ingestFile(
   }
 
   try {
+    if (reportType === "royalty") {
+      const extract = parseRoyalty(text);
+      const result = await fetchMutation(
+        api.ingest.royalty,
+        { storeName, filename: file.name, extract },
+        { token }
+      );
+      return {
+        filename: file.name,
+        status: "parsed",
+        reportType: "royalty",
+        date: extract.date,
+        needsReview: result.needsReview,
+      };
+    }
+
     const extract = parseCashup(text);
     const result = await fetchMutation(
       api.ingest.cashup,

@@ -4,6 +4,7 @@ import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { use } from "react";
+import { ChannelMixChart } from "@/components/channel-mix-chart";
 import { formatRand } from "@/lib/format";
 
 export default function StoreDrillDown({
@@ -47,11 +48,25 @@ export default function StoreDrillDown({
                       : formatRand(day.cashVariance)}
                   </dd>
                 </div>
+                <div>
+                  <dt className="text-muted-foreground">Royalty due</dt>
+                  <dd data-testid="royalty-due">
+                    {day.royaltyDue === null ? "—" : formatRand(day.royaltyDue)}
+                  </dd>
+                </div>
               </dl>
               {day.needsReview && (
                 <span className="rounded bg-orange-100 px-2 py-1 text-orange-700 text-xs dark:bg-orange-950 dark:text-orange-300">
                   Needs review
                 </span>
+              )}
+              {day.channelMix !== null && (
+                <div className="w-full" data-testid="channel-mix">
+                  <p className="mb-2 text-muted-foreground text-sm">
+                    Channel mix
+                  </p>
+                  <ChannelMixChart channelMix={day.channelMix} />
+                </div>
               )}
             </li>
           ))}

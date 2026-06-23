@@ -92,6 +92,85 @@ test("a Cashup whose net sales does not reconcile is flagged for review", async 
   expect(days[0]?.needsReviewReasons?.length).toBeGreaterThan(0);
 });
 
+// Mirrors the reference Royalty report (Roman's Pizza Boitumelo, 2026-06-07).
+const REFERENCE_ROYALTY = {
+  date: "2026-06-07",
+  channelMix: {
+    callIn: 114_820,
+    counter: 917_710,
+    mobileApp: 11_380,
+    mrDelivery: 213_190,
+    uberEats: 0,
+    website: 0,
+  },
+  netSales: 1_257_100,
+  deliveryFees: 0,
+  netTurnover: 1_093_130,
+  tax: 163_970,
+  royaltyDue: 100_568,
+};
+
+test("a Royalty after a Cashup merges onto the one Store Day", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.cashup, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Store_Cashup.pdf",
+    extract: REFERENCE_EXTRACT,
+  });
+  const result = await asStore.mutation(api.ingest.royalty, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Royalty.pdf",
+    extract: REFERENCE_ROYALTY,
+  });
+
+  expect(result.needsReview).toBe(false);
+
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days).toHaveLength(1);
+  expect(days[0]).toMatchObject({
+    date: "2026-06-07",
+    netSales: 1_257_100,
+    cashVariance: -14_550,
+    netTurnover: 1_093_130,
+    royaltyDue: 100_568,
+    channelMix: REFERENCE_ROYALTY.channelMix,
+    needsReview: false,
+  });
+});
+
+test("a Royalty alone creates a Store Day with its figures", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.royalty, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Royalty.pdf",
+    extract: REFERENCE_ROYALTY,
+  });
+
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days).toHaveLength(1);
+  expect(days[0]?.royaltyDue).toBe(100_568);
+  expect(days[0]?.netSales).toBeUndefined();
+});
+
+test("a Royalty due that is not 8% of net sales is flagged for review", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const result = await asStore.mutation(api.ingest.royalty, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "broken.pdf",
+    extract: { ...REFERENCE_ROYALTY, royaltyDue: 200_000 },
+  });
+
+  expect(result.needsReview).toBe(true);
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days[0]?.needsReviewReasons?.[0]).toContain("Royalty due");
+});
+
 test("ingesting without an active organization is rejected", async () => {
   const t = convexTest(schema, modules);
   const asNobody = t.withIdentity({ subject: "user_x" });

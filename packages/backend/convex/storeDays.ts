@@ -23,6 +23,8 @@ export const listForStore = query({
       date: day.date,
       netSales: day.netSales ?? null,
       cashVariance: day.cashVariance ?? null,
+      channelMix: day.channelMix ?? null,
+      royaltyDue: day.royaltyDue ?? null,
       needsReview: day.needsReview ?? false,
     }));
   },

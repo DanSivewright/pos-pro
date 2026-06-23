@@ -8,6 +8,12 @@ describe("detectReportType", () => {
     ).toBe("cashup");
   });
 
+  it("recognises a Royalty report from its header", () => {
+    expect(detectReportType("Royalty Report ServeUp | Roman's Pizza")).toBe(
+      "royalty"
+    );
+  });
+
   it("returns null for text it does not recognise", () => {
     expect(detectReportType("Some unrelated document")).toBeNull();
   });
