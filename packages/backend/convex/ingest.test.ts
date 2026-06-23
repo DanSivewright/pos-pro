@@ -279,6 +279,120 @@ test("a Gross Profit whose net sales disagrees with the Cashup is flagged", asyn
   expect(days[0]?.needsReviewReasons?.[0]).toContain("Gross Profit net sales");
 });
 
+// Mirrors the reference Stock Variance report: grand variance total -R244.12,
+// with two per-item rows standing in for the full 201-row set. Its total
+// disagrees materially with the Gross Profit total above (different measure).
+const REFERENCE_STOCK_VARIANCE = {
+  date: "2026-06-07",
+  stockVarianceTotal: -24_412,
+  items: [
+    {
+      code: "DMM004",
+      name: "Mozzarella Underberg / Bandini Mix",
+      category: "Cheese",
+      variance: 10_656,
+      variancePercent: 5.98,
+    },
+    {
+      code: "CFC001",
+      name: "Feta",
+      category: "Cheese",
+      variance: -1226,
+      variancePercent: -18.33,
+    },
+  ],
+};
+
+test("a Stock Variance writes its total and the per-item set", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const result = await asStore.mutation(api.ingest.stockVariance, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Stock_Variance.pdf",
+    extract: REFERENCE_STOCK_VARIANCE,
+  });
+
+  expect(result.needsReview).toBe(false);
+
+  const { days, items } = await t.run(async (ctx) => ({
+    days: await ctx.db.query("storeDays").collect(),
+    items: await ctx.db.query("stockVarianceItems").collect(),
+  }));
+
+  expect(days).toHaveLength(1);
+  expect(days[0]).toMatchObject({
+    stockVarianceTotal: -24_412,
+    itemsProvider: "stockVariance",
+    needsReview: false,
+  });
+  expect(items).toHaveLength(2);
+  expect(items.every((row) => row.actualCos === undefined)).toBe(true);
+});
+
+test("a Stock Variance after a Gross Profit replaces the item set (latest-wins)", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Gross_Profit.pdf",
+    extract: REFERENCE_GROSS_PROFIT,
+  });
+  await asStore.mutation(api.ingest.stockVariance, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Stock_Variance.pdf",
+    extract: REFERENCE_STOCK_VARIANCE,
+  });
+
+  const { days, items } = await t.run(async (ctx) => ({
+    days: await ctx.db.query("storeDays").collect(),
+    items: await ctx.db.query("stockVarianceItems").collect(),
+  }));
+
+  expect(days).toHaveLength(1);
+  expect(days[0]?.itemsProvider).toBe("stockVariance");
+  // Both Gross Profit rows are gone; the set is now the Stock Variance rows.
+  expect(items).toHaveLength(2);
+  expect(items.every((row) => row.actualCos === undefined)).toBe(true);
+});
+
+test("materially disagreeing provider totals flag the day for review", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Gross_Profit.pdf",
+    extract: REFERENCE_GROSS_PROFIT,
+  });
+  const result = await asStore.mutation(api.ingest.stockVariance, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Stock_Variance.pdf",
+    extract: REFERENCE_STOCK_VARIANCE,
+  });
+
+  expect(result.needsReview).toBe(true);
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days[0]?.needsReviewReasons?.[0]).toContain("Stock variance total");
+});
+
+test("a Stock Wastage writes the waste cost onto the Store Day", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const result = await asStore.mutation(api.ingest.stockWastage, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Stock_Wastage.pdf",
+    extract: { date: "2026-06-07", wasteCost: 1324 },
+  });
+
+  expect(result.needsReview).toBe(false);
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days).toHaveLength(1);
+  expect(days[0]?.wasteCost).toBe(1324);
+});
+
 test("ingesting without an active organization is rejected", async () => {
   const t = convexTest(schema, modules);
   const asNobody = t.withIdentity({ subject: "user_x" });

@@ -27,6 +27,8 @@ export const listForStore = query({
       royaltyDue: day.royaltyDue ?? null,
       gpPercent: day.gpPercent ?? null,
       fcPercent: day.fcPercent ?? null,
+      wasteCost: day.wasteCost ?? null,
+      itemsProvider: day.itemsProvider ?? null,
       needsReview: day.needsReview ?? false,
     }));
   },

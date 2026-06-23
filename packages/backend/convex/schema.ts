@@ -68,14 +68,17 @@ export default defineSchema({
   }).index("by_storeId_and_date", ["storeId", "date"]),
 
   // Per-item stock variance rows for a Store Day. Fully replaced on each parse
-  // by the owning provider (Gross Profit or Stock Variance).
+  // by the owning provider (Gross Profit or Stock Variance). `variance` (cents)
+  // and `variancePercent` are common to both providers; `actualCos`/
+  // `theoreticalCos` are only reported by Gross Profit (the Stock Variance
+  // report gives usage quantities, not per-item cost-of-sales money).
   stockVarianceItems: defineTable({
     storeDayId: v.id("storeDays"),
     code: v.string(),
     name: v.string(),
     category: v.string(),
-    actualCos: v.number(),
-    theoreticalCos: v.number(),
+    actualCos: v.optional(v.number()),
+    theoreticalCos: v.optional(v.number()),
     variance: v.number(),
     variancePercent: v.number(),
   }).index("by_storeDayId", ["storeDayId"]),

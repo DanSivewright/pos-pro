@@ -24,6 +24,20 @@ const REFERENCE_GROSS_PROFIT = join(
   "../../docs/reference/rp-first-batch/Gross_Profit_From_07-06-2026_To_07-06-2026_Printed_On_08-06-2026.pdf"
 );
 
+// The reference Stock Variance for the same Store and date: the alternative
+// provider of the per-item stock-variance set.
+const REFERENCE_STOCK_VARIANCE = join(
+  process.cwd(),
+  "../../docs/reference/rp-sv-forms/Stock_Variance_From_07-06-2026_To_07-06-2026_Printed_On_07-06-2026.pdf"
+);
+
+// The reference Stock Wastage for the same Store and date, contributing the
+// day's waste cost.
+const REFERENCE_STOCK_WASTAGE = join(
+  process.cwd(),
+  "../../docs/reference/rp-sv-forms/Stock_Wastage_From_07-06-2026_To_07-06-2026_Printed_On_07-06-2026.pdf"
+);
+
 // Provided by the runner. The user must belong to exactly one Clerk
 // Organization so that org becomes the active Store on sign-in.
 const userEmail = process.env.E2E_CLERK_USER_EMAIL ?? "";
@@ -91,4 +105,36 @@ test("uploads a Gross Profit and renders GP%/FC% and the top variances", async (
   await expect(page.getByTestId("gp-percent").first()).toHaveText("57.21%");
   await expect(page.getByTestId("fc-percent").first()).toHaveText("42.79%");
   await expect(page.getByTestId("top-variances").first()).toBeVisible();
+});
+
+test("uploads a Stock Variance and renders the top variances", async ({
+  page,
+}) => {
+  await setupClerkTestingToken({ page });
+
+  await page.goto("/dashboard");
+  await clerk.signIn({ page, emailAddress: userEmail });
+  await page.reload();
+
+  await page.setInputFiles('input[type="file"]', REFERENCE_STOCK_VARIANCE);
+  await expect(page.getByText(PARSED_TOAST).first()).toBeVisible();
+
+  await page.locator('a[href^="/dashboard/stores/"]').first().click();
+
+  await expect(page.getByTestId("top-variances").first()).toBeVisible();
+});
+
+test("uploads a Stock Wastage and renders the waste cost", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+
+  await page.goto("/dashboard");
+  await clerk.signIn({ page, emailAddress: userEmail });
+  await page.reload();
+
+  await page.setInputFiles('input[type="file"]', REFERENCE_STOCK_WASTAGE);
+  await expect(page.getByText(PARSED_TOAST).first()).toBeVisible();
+
+  await page.locator('a[href^="/dashboard/stores/"]').first().click();
+
+  await expect(page.getByTestId("waste-cost").first()).toHaveText("R13.24");
 });

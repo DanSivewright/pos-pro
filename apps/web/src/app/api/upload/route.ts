@@ -6,6 +6,8 @@ import { detectReportType } from "@/lib/extraction/detect-report-type";
 import { parseCashup } from "@/lib/extraction/parse-cashup";
 import { parseGrossProfit } from "@/lib/extraction/parse-gross-profit";
 import { parseRoyalty } from "@/lib/extraction/parse-royalty";
+import { parseStockVariance } from "@/lib/extraction/parse-stock-variance";
+import { parseStockWastage } from "@/lib/extraction/parse-stock-wastage";
 import { extractPdfText } from "@/lib/extraction/pdf-text";
 
 // Parsing runs in this Node boundary, in memory; raw bytes are never persisted.
@@ -37,18 +39,11 @@ async function ingestFile(
   }
 
   const reportType = detectReportType(text);
-  if (
-    reportType !== "cashup" &&
-    reportType !== "royalty" &&
-    reportType !== "grossProfit"
-  ) {
+  if (reportType === null) {
     return {
       filename: file.name,
       status: "unsupported",
-      reason:
-        reportType === null
-          ? "Unrecognised report"
-          : `${reportType} not yet supported`,
+      reason: "Unrecognised report",
     };
   }
 
@@ -80,6 +75,38 @@ async function ingestFile(
         filename: file.name,
         status: "parsed",
         reportType: "grossProfit",
+        date: extract.date,
+        needsReview: result.needsReview,
+      };
+    }
+
+    if (reportType === "stockVariance") {
+      const extract = parseStockVariance(text);
+      const result = await fetchMutation(
+        api.ingest.stockVariance,
+        { storeName, filename: file.name, extract },
+        { token }
+      );
+      return {
+        filename: file.name,
+        status: "parsed",
+        reportType: "stockVariance",
+        date: extract.date,
+        needsReview: result.needsReview,
+      };
+    }
+
+    if (reportType === "stockWastage") {
+      const extract = parseStockWastage(text);
+      const result = await fetchMutation(
+        api.ingest.stockWastage,
+        { storeName, filename: file.name, extract },
+        { token }
+      );
+      return {
+        filename: file.name,
+        status: "parsed",
+        reportType: "stockWastage",
         date: extract.date,
         needsReview: result.needsReview,
       };

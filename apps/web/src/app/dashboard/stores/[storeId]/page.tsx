@@ -67,6 +67,12 @@ export default function StoreDrillDown({
                     {day.fcPercent === null ? "—" : `${day.fcPercent}%`}
                   </dd>
                 </div>
+                <div>
+                  <dt className="text-muted-foreground">Waste cost</dt>
+                  <dd data-testid="waste-cost">
+                    {day.wasteCost === null ? "—" : formatRand(day.wasteCost)}
+                  </dd>
+                </div>
               </dl>
               {day.needsReview && (
                 <span className="rounded bg-orange-100 px-2 py-1 text-orange-700 text-xs dark:bg-orange-950 dark:text-orange-300">
@@ -81,7 +87,7 @@ export default function StoreDrillDown({
                   <ChannelMixChart channelMix={day.channelMix} />
                 </div>
               )}
-              {day.gpPercent !== null && (
+              {day.itemsProvider !== null && (
                 <div className="w-full" data-testid="top-variances">
                   <p className="mb-2 text-muted-foreground text-sm">
                     Top stock variances
