@@ -8,7 +8,9 @@ import {
   Unauthenticated,
   useQuery,
 } from "convex/react";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { UploadCashup } from "@/components/upload-cashup";
 
 export default function Dashboard() {
   const stores = useQuery(api.stores.listPermitted);
@@ -22,8 +24,13 @@ export default function Dashboard() {
     body = (
       <ul className="grid gap-3">
         {stores.map((store) => (
-          <li className="rounded-lg border p-4" key={store.id}>
-            <span className="font-medium">{store.name}</span>
+          <li key={store.id}>
+            <Link
+              className="block rounded-lg border p-4 font-medium hover:bg-muted"
+              href={`/dashboard/stores/${store.id}`}
+            >
+              {store.name}
+            </Link>
           </li>
         ))}
       </ul>
@@ -36,7 +43,10 @@ export default function Dashboard() {
         <main className="container mx-auto max-w-3xl px-4 py-6">
           <header className="mb-6 flex items-center justify-between">
             <h1 className="font-semibold text-2xl">Stores</h1>
-            <UserButton />
+            <div className="flex items-center gap-4">
+              <UploadCashup />
+              <UserButton />
+            </div>
           </header>
           {body}
         </main>

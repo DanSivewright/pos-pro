@@ -19,6 +19,18 @@
           "performance": { "noNamespaceImport": "off" }
         }
       }
+    },
+    {
+      // Convex maps each function file's name onto the generated `api` object,
+      // and forbids hyphens in module paths (only alphanumerics, underscores,
+      // periods). Multi-word function files must therefore be camelCase, which
+      // conflicts with kebab-case filenames. Convex's constraint wins here.
+      "includes": ["packages/backend/convex/**"],
+      "linter": {
+        "rules": {
+          "style": { "useFilenamingConvention": "off" }
+        }
+      }
     }
   ]
 }

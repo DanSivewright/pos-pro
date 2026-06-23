@@ -26,6 +26,33 @@ export async function requireCaller(
   };
 }
 
+// Resolves the Store backing the caller's active Clerk org, creating it on
+// first use. Store ownership is keyed on the JWT org claim, never on caller
+// input, so a caller can only ever read or write their own Store.
+export async function getOrCreateActiveStore(
+  ctx: MutationCtx,
+  name: string
+): Promise<Doc<"stores">> {
+  const caller = await requireCaller(ctx);
+  const { orgId } = caller;
+  if (orgId === null) {
+    throw new Error("No active organization");
+  }
+  const existing = await ctx.db
+    .query("stores")
+    .withIndex("by_clerkOrgId", (q) => q.eq("clerkOrgId", orgId))
+    .unique();
+  if (existing !== null) {
+    return existing;
+  }
+  const storeId = await ctx.db.insert("stores", { clerkOrgId: orgId, name });
+  const created = await ctx.db.get(storeId);
+  if (created === null) {
+    throw new Error("Store creation failed");
+  }
+  return created;
+}
+
 // The Stores the caller may see: super-users see every Store; a store user
 // sees only the Store backing their active Clerk org.
 export async function getPermittedStores(
