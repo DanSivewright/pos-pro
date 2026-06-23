@@ -1,0 +1,6 @@
+{
+  "extends": "@pos-pro/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
