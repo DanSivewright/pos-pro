@@ -1,4 +1,24 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite/biome/core", "ultracite/biome/next"]
+  "extends": ["ultracite/biome/core", "ultracite/biome/next"],
+  "overrides": [
+    {
+      // Vendored shadcn/ui registry components — mirrored from the shadcn CLI,
+      // not hand-authored. Their generated patterns (React namespace imports,
+      // dangerouslySetInnerHTML for theme CSS, ARIA role primitives, cookie
+      // writes) intentionally diverge from our lint rules. Keep formatting on,
+      // linting off, for this directory only.
+      "includes": ["packages/ui/src/components/**"],
+      "linter": { "enabled": false }
+    },
+    {
+      // Registry hooks copied from shadcn use the React namespace import.
+      "includes": ["packages/ui/src/hooks/**"],
+      "linter": {
+        "rules": {
+          "performance": { "noNamespaceImport": "off" }
+        }
+      }
+    }
+  ]
 }

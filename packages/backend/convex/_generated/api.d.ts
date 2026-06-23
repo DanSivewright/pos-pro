@@ -8,8 +8,9 @@
  * @module
  */
 
-import type * as healthCheck from "../healthCheck.js";
-import type * as privateData from "../privateData.js";
+import type * as health from "../health.js";
+import type * as lib_authz from "../lib/authz.js";
+import type * as stores from "../stores.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +19,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  healthCheck: typeof healthCheck;
-  privateData: typeof privateData;
+  health: typeof health;
+  "lib/authz": typeof lib_authz;
+  stores: typeof stores;
 }>;
 
 /**

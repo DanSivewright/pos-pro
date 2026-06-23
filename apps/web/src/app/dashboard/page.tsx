@@ -1,6 +1,6 @@
 "use client";
 
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignInButton, UserButton } from "@clerk/nextjs";
 import { api } from "@pos-pro/backend/convex/_generated/api";
 import {
   Authenticated,
@@ -8,26 +8,48 @@ import {
   Unauthenticated,
   useQuery,
 } from "convex/react";
+import type { ReactNode } from "react";
 
 export default function Dashboard() {
-  const user = useUser();
-  const privateData = useQuery(api.privateData.get);
+  const stores = useQuery(api.stores.listPermitted);
+
+  let body: ReactNode;
+  if (stores === undefined) {
+    body = <p className="text-muted-foreground">Loading stores…</p>;
+  } else if (stores.length === 0) {
+    body = <p className="text-muted-foreground">No stores available.</p>;
+  } else {
+    body = (
+      <ul className="grid gap-3">
+        {stores.map((store) => (
+          <li className="rounded-lg border p-4" key={store.id}>
+            <span className="font-medium">{store.name}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <>
       <Authenticated>
-        <div>
-          <h1>Dashboard</h1>
-          <p>Welcome {user.user?.fullName}</p>
-          <p>privateData: {privateData?.message}</p>
-          <UserButton />
-        </div>
+        <main className="container mx-auto max-w-3xl px-4 py-6">
+          <header className="mb-6 flex items-center justify-between">
+            <h1 className="font-semibold text-2xl">Stores</h1>
+            <UserButton />
+          </header>
+          {body}
+        </main>
       </Authenticated>
       <Unauthenticated>
-        <SignInButton />
+        <div className="flex min-h-svh items-center justify-center">
+          <SignInButton />
+        </div>
       </Unauthenticated>
       <AuthLoading>
-        <div>Loading...</div>
+        <div className="flex min-h-svh items-center justify-center text-muted-foreground">
+          Loading…
+        </div>
       </AuthLoading>
     </>
   );
