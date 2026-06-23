@@ -171,6 +171,114 @@ test("a Royalty due that is not 8% of net sales is flagged for review", async ()
   expect(days[0]?.needsReviewReasons?.[0]).toContain("Royalty due");
 });
 
+// Mirrors the reference Gross Profit report (Roman's Pizza Boitumelo,
+// 2026-06-07): GP% 57.21, FC% 42.79, grand variance R61.05, with a couple of
+// per-item rows standing in for the full 152-row set.
+const REFERENCE_GROSS_PROFIT = {
+  date: "2026-06-07",
+  gpPercent: 57.21,
+  fcPercent: 42.79,
+  netSales: 1_257_100,
+  stockVarianceTotal: 6105,
+  items: [
+    {
+      code: "DMM004",
+      name: "Mozzarella Underberg / Bandini Mix",
+      category: "CHEESE",
+      actualCos: 166_908,
+      theoreticalCos: 177_564,
+      variance: 10_656,
+      variancePercent: 6,
+    },
+    {
+      code: "MMC003",
+      name: "Marinated Chicken",
+      category: "MEAT",
+      actualCos: 85_715,
+      theoreticalCos: 71_563,
+      variance: -14_152,
+      variancePercent: -19.78,
+    },
+  ],
+};
+
+test("a Gross Profit writes the GP/FC figures and the per-item variance set", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const result = await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Gross_Profit.pdf",
+    extract: REFERENCE_GROSS_PROFIT,
+  });
+
+  expect(result.needsReview).toBe(false);
+
+  const { days, items } = await t.run(async (ctx) => ({
+    days: await ctx.db.query("storeDays").collect(),
+    items: await ctx.db.query("stockVarianceItems").collect(),
+  }));
+
+  expect(days).toHaveLength(1);
+  expect(days[0]).toMatchObject({
+    date: "2026-06-07",
+    gpPercent: 57.21,
+    fcPercent: 42.79,
+    stockVarianceTotal: 6105,
+    itemsProvider: "grossProfit",
+    needsReview: false,
+  });
+  // Net Sales stays Cashup-owned: a Gross Profit alone never sets it.
+  expect(days[0]?.netSales).toBeUndefined();
+  expect(items).toHaveLength(2);
+  expect(items.map((row) => row.code).sort()).toEqual(["DMM004", "MMC003"]);
+});
+
+test("re-uploading a Gross Profit fully replaces the per-item set", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "first.pdf",
+    extract: REFERENCE_GROSS_PROFIT,
+  });
+  await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "second.pdf",
+    extract: {
+      ...REFERENCE_GROSS_PROFIT,
+      items: [REFERENCE_GROSS_PROFIT.items[0]],
+    },
+  });
+
+  const items = await t.run((ctx) =>
+    ctx.db.query("stockVarianceItems").collect()
+  );
+  expect(items).toHaveLength(1);
+  expect(items[0]?.code).toBe("DMM004");
+});
+
+test("a Gross Profit whose net sales disagrees with the Cashup is flagged", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.cashup, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Store_Cashup.pdf",
+    extract: REFERENCE_EXTRACT,
+  });
+  const result = await asStore.mutation(api.ingest.grossProfit, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Gross_Profit.pdf",
+    extract: { ...REFERENCE_GROSS_PROFIT, netSales: 1_000_000 },
+  });
+
+  expect(result.needsReview).toBe(true);
+  const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
+  expect(days[0]?.needsReviewReasons?.[0]).toContain("Gross Profit net sales");
+});
+
 test("ingesting without an active organization is rejected", async () => {
   const t = convexTest(schema, modules);
   const asNobody = t.withIdentity({ subject: "user_x" });

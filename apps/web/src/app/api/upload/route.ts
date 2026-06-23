@@ -4,6 +4,7 @@ import { fetchMutation } from "convex/nextjs";
 import { NextResponse } from "next/server";
 import { detectReportType } from "@/lib/extraction/detect-report-type";
 import { parseCashup } from "@/lib/extraction/parse-cashup";
+import { parseGrossProfit } from "@/lib/extraction/parse-gross-profit";
 import { parseRoyalty } from "@/lib/extraction/parse-royalty";
 import { extractPdfText } from "@/lib/extraction/pdf-text";
 
@@ -36,7 +37,11 @@ async function ingestFile(
   }
 
   const reportType = detectReportType(text);
-  if (reportType !== "cashup" && reportType !== "royalty") {
+  if (
+    reportType !== "cashup" &&
+    reportType !== "royalty" &&
+    reportType !== "grossProfit"
+  ) {
     return {
       filename: file.name,
       status: "unsupported",
@@ -59,6 +64,22 @@ async function ingestFile(
         filename: file.name,
         status: "parsed",
         reportType: "royalty",
+        date: extract.date,
+        needsReview: result.needsReview,
+      };
+    }
+
+    if (reportType === "grossProfit") {
+      const extract = parseGrossProfit(text);
+      const result = await fetchMutation(
+        api.ingest.grossProfit,
+        { storeName, filename: file.name, extract },
+        { token }
+      );
+      return {
+        filename: file.name,
+        status: "parsed",
+        reportType: "grossProfit",
         date: extract.date,
         needsReview: result.needsReview,
       };

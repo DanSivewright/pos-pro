@@ -210,3 +210,112 @@ export const royalty = mutation({
     return { storeDayId, needsReview };
   },
 });
+
+// The figures a Gross Profit report owns on a Store Day: the achieved GP%/FC%,
+// the grand stock-variance total and the full per-item stock-variance set. Its
+// `netSales` is read only to reconcile against the day's Net Sales — it stays a
+// Cashup-owned figure and is not persisted.
+const stockVarianceItem = v.object({
+  code: v.string(),
+  name: v.string(),
+  category: v.string(),
+  actualCos: v.number(),
+  theoreticalCos: v.number(),
+  variance: v.number(),
+  variancePercent: v.number(),
+});
+
+const grossProfitExtract = v.object({
+  date: v.string(),
+  gpPercent: v.number(),
+  fcPercent: v.number(),
+  netSales: v.number(),
+  stockVarianceTotal: v.number(),
+  items: v.array(stockVarianceItem),
+});
+
+export const grossProfit = mutation({
+  args: {
+    storeName: v.string(),
+    filename: v.string(),
+    extract: grossProfitExtract,
+  },
+  returns: v.object({
+    storeDayId: v.id("storeDays"),
+    needsReview: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const caller = await requireCaller(ctx);
+    const store = await getOrCreateActiveStore(ctx, args.storeName);
+
+    const existing = await ctx.db
+      .query("storeDays")
+      .withIndex("by_storeId_and_date", (q) =>
+        q.eq("storeId", store._id).eq("date", args.extract.date)
+      )
+      .unique();
+
+    // Reconcile the report's Net Sales against the day's Net Sales when a Cashup
+    // has already set it; a mismatch flags the day. Preserve other report-types'
+    // reasons; replace our own so re-uploading a Gross Profit is idempotent.
+    const carried = (existing?.needsReviewReasons ?? []).filter(
+      (reason) => !reason.startsWith("Gross Profit net sales")
+    );
+    const reasons =
+      existing?.netSales === undefined ||
+      existing.netSales === args.extract.netSales
+        ? carried
+        : [
+            ...carried,
+            `Gross Profit net sales ${args.extract.netSales} does not match the day's net sales ${existing.netSales}`,
+          ];
+    const needsReview = reasons.length > 0;
+
+    const fields = {
+      gpPercent: args.extract.gpPercent,
+      fcPercent: args.extract.fcPercent,
+      stockVarianceTotal: args.extract.stockVarianceTotal,
+      itemsProvider: "grossProfit" as const,
+      needsReview,
+      needsReviewReasons: reasons,
+    };
+
+    let storeDayId = existing?._id;
+    if (storeDayId === undefined) {
+      storeDayId = await ctx.db.insert("storeDays", {
+        storeId: store._id,
+        date: args.extract.date,
+        ...fields,
+      });
+    } else {
+      await ctx.db.patch(storeDayId, fields);
+    }
+
+    // The per-item set is fully replaced on each parse by the owning provider.
+    const stale = await ctx.db
+      .query("stockVarianceItems")
+      .withIndex("by_storeDayId", (q) => q.eq("storeDayId", storeDayId))
+      .collect();
+    await Promise.all(stale.map((row) => ctx.db.delete(row._id)));
+    await Promise.all(
+      args.extract.items.map((item) =>
+        ctx.db.insert("stockVarianceItems", { storeDayId, ...item })
+      )
+    );
+
+    const uploadId = await ctx.db.insert("uploads", {
+      storeId: store._id,
+      uploadedBy: caller.subject,
+      fileCount: 1,
+    });
+    await ctx.db.insert("uploadedFiles", {
+      uploadId,
+      storeDayId,
+      filename: args.filename,
+      reportType: "grossProfit",
+      status: "parsed",
+    });
+
+    return { storeDayId, needsReview };
+  },
+});
