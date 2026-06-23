@@ -12,6 +12,8 @@
     "@pos-pro/backend": "workspace:*",
     "@pos-pro/env": "workspace:*",
     "@pos-pro/ui": "workspace:*",
+    "@tanstack/react-hotkeys": "^0.10.0",
+    "@tanstack/react-table": "^8.21.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "convex": "catalog:",
     "dotenv": "catalog:",
