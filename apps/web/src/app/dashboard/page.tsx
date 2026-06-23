@@ -2,7 +2,12 @@
 
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { api } from "@pos-pro/backend/convex/_generated/api";
-import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
+import {
+  Authenticated,
+  AuthLoading,
+  Unauthenticated,
+  useQuery,
+} from "convex/react";
 
 export default function Dashboard() {
   const user = useUser();
