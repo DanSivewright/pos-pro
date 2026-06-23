@@ -14,7 +14,6 @@ import type * as health from "../health.js";
 import type * as ingest from "../ingest.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as lib_digest from "../lib/digest.js";
-import type * as lib_format from "../lib/format.js";
 import type * as lib_thresholds from "../lib/thresholds.js";
 import type * as storeDays from "../storeDays.js";
 import type * as stores from "../stores.js";
@@ -32,7 +31,6 @@ declare const fullApi: ApiFromModules<{
   ingest: typeof ingest;
   "lib/authz": typeof lib_authz;
   "lib/digest": typeof lib_digest;
-  "lib/format": typeof lib_format;
   "lib/thresholds": typeof lib_thresholds;
   storeDays: typeof storeDays;
   stores: typeof stores;
