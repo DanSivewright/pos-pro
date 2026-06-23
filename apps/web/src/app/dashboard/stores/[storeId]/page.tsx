@@ -5,6 +5,7 @@ import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { use } from "react";
 import { ChannelMixChart } from "@/components/channel-mix-chart";
+import { Completeness } from "@/components/completeness";
 import { TopStockVariances } from "@/components/top-stock-variances";
 import { formatRand } from "@/lib/format";
 
@@ -79,6 +80,7 @@ export default function StoreDrillDown({
                   Needs review
                 </span>
               )}
+              <Completeness reports={day.reports} />
               {day.channelMix !== null && (
                 <div className="w-full" data-testid="channel-mix">
                   <p className="mb-2 text-muted-foreground text-sm">

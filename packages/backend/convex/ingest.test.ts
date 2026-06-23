@@ -2,6 +2,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -391,6 +392,132 @@ test("a Stock Wastage writes the waste cost onto the Store Day", async () => {
   const days = await t.run((ctx) => ctx.db.query("storeDays").collect());
   expect(days).toHaveLength(1);
   expect(days[0]?.wasteCost).toBe(1324);
+});
+
+test("completeness reflects which report-types a Store Day received", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  await asStore.mutation(api.ingest.cashup, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Store_Cashup.pdf",
+    extract: REFERENCE_EXTRACT,
+  });
+  await asStore.mutation(api.ingest.royalty, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Royalty.pdf",
+    extract: REFERENCE_ROYALTY,
+  });
+
+  const storeId = await t.run((ctx) =>
+    ctx.db
+      .query("stores")
+      .first()
+      .then((s) => s?._id)
+  );
+  const days = await asStore.query(api.storeDays.listForStore, {
+    storeId: storeId as Id<"stores">,
+  });
+
+  expect(days[0]?.reports).toEqual({
+    cashup: true,
+    royalty: true,
+    grossProfit: false,
+    stockVariance: false,
+    stockWastage: false,
+  });
+});
+
+test("a multi-file batch records every file against one upload", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const { uploadId } = await asStore.mutation(api.ingest.createBatch, {
+    storeName: "Roman's Pizza Boitumelo",
+    fileCount: 3,
+  });
+
+  await asStore.mutation(api.ingest.cashup, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Store_Cashup.pdf",
+    extract: REFERENCE_EXTRACT,
+    uploadId,
+  });
+  await asStore.mutation(api.ingest.royalty, {
+    storeName: "Roman's Pizza Boitumelo",
+    filename: "Royalty.pdf",
+    extract: REFERENCE_ROYALTY,
+    uploadId,
+  });
+  await asStore.mutation(api.ingest.recordUnparsed, {
+    uploadId,
+    filename: "menu.pdf",
+    status: "unsupported",
+    reason: "Unrecognised report",
+  });
+
+  const { uploads, files } = await t.run(async (ctx) => ({
+    uploads: await ctx.db.query("uploads").collect(),
+    files: await ctx.db.query("uploadedFiles").collect(),
+  }));
+
+  // Exactly one batch for the whole action; its fileCount is the total
+  // selected, and all three files reference it.
+  expect(uploads).toHaveLength(1);
+  expect(uploads[0]?.fileCount).toBe(3);
+  expect(files).toHaveLength(3);
+  expect(files.every((f) => f.uploadId === uploadId)).toBe(true);
+  const unsupported = files.find((f) => f.status === "unsupported");
+  expect(unsupported?.filename).toBe("menu.pdf");
+  expect(unsupported?.storeDayId).toBeUndefined();
+});
+
+test("an unparsed file leaves no Store Day data behind", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  const { uploadId } = await asStore.mutation(api.ingest.createBatch, {
+    storeName: "Roman's Pizza Boitumelo",
+    fileCount: 1,
+  });
+  await asStore.mutation(api.ingest.recordUnparsed, {
+    uploadId,
+    filename: "broken.pdf",
+    status: "failed",
+    reason: "Could not read PDF",
+  });
+
+  const { days, files } = await t.run(async (ctx) => ({
+    days: await ctx.db.query("storeDays").collect(),
+    files: await ctx.db.query("uploadedFiles").collect(),
+  }));
+  expect(days).toHaveLength(0);
+  expect(files).toHaveLength(1);
+  expect(files[0]).toMatchObject({
+    filename: "broken.pdf",
+    status: "failed",
+    reason: "Could not read PDF",
+  });
+});
+
+test("recording into another Store's batch is rejected", async () => {
+  const t = convexTest(schema, modules);
+  const asStoreA = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+  const asStoreB = t.withIdentity({ subject: "user_b", org_id: "org_b" });
+
+  const { uploadId } = await asStoreA.mutation(api.ingest.createBatch, {
+    storeName: "Store A",
+    fileCount: 1,
+  });
+
+  await expect(
+    asStoreB.mutation(api.ingest.recordUnparsed, {
+      uploadId,
+      filename: "x.pdf",
+      status: "failed",
+      reason: "nope",
+    })
+  ).rejects.toThrow("Upload batch not found");
 });
 
 test("ingesting without an active organization is rejected", async () => {

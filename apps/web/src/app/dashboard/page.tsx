@@ -3,7 +3,7 @@
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { ControlTower } from "@/components/control-tower";
-import { UploadCashup } from "@/components/upload-cashup";
+import { UploadReports } from "@/components/upload-reports";
 
 export default function Dashboard() {
   return (
@@ -13,7 +13,7 @@ export default function Dashboard() {
           <header className="mb-6 flex items-center justify-between">
             <h1 className="font-semibold text-2xl">Control Tower</h1>
             <div className="flex items-center gap-4">
-              <UploadCashup />
+              <UploadReports />
               <UserButton />
             </div>
           </header>

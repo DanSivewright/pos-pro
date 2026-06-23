@@ -124,6 +124,43 @@ test("uploads a Stock Variance and renders the top variances", async ({
   await expect(page.getByTestId("top-variances").first()).toBeVisible();
 });
 
+test("a mixed batch shows per-file statuses and Store Day completeness", async ({
+  page,
+}) => {
+  await setupClerkTestingToken({ page });
+
+  await page.goto("/dashboard");
+  await clerk.signIn({ page, emailAddress: userEmail });
+  await page.reload();
+
+  await page.setInputFiles('input[type="file"]', [
+    REFERENCE_CASHUP,
+    REFERENCE_ROYALTY,
+    REFERENCE_GROSS_PROFIT,
+  ]);
+
+  // Three persistent per-file result rows, all parsed.
+  await expect(page.getByTestId("upload-result")).toHaveCount(3);
+  await expect(page.getByTestId("result-status").first()).toHaveText("parsed");
+
+  await page.locator('a[href^="/dashboard/stores/"]').first().click();
+
+  // The one Store Day shows Cashup, Royalty and GP as received.
+  const completeness = page.getByTestId("completeness").first();
+  await expect(completeness.getByTestId("report-cashup")).toHaveAttribute(
+    "data-present",
+    "true"
+  );
+  await expect(completeness.getByTestId("report-royalty")).toHaveAttribute(
+    "data-present",
+    "true"
+  );
+  await expect(completeness.getByTestId("report-grossProfit")).toHaveAttribute(
+    "data-present",
+    "true"
+  );
+});
+
 test("the Control Tower shows the Store tile with its month-to-date net", async ({
   page,
 }) => {

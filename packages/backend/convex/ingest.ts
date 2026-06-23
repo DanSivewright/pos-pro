@@ -1,7 +1,95 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
-import { getOrCreateActiveStore, requireCaller } from "./lib/authz";
+import {
+  getOrCreateActiveStore,
+  getPermittedStores,
+  requireCaller,
+} from "./lib/authz";
+
+type ReportType =
+  | "cashup"
+  | "royalty"
+  | "grossProfit"
+  | "stockVariance"
+  | "stockWastage";
+
+// Records one successfully-parsed file's provenance. When the caller supplies a
+// batch upload (a multi-file action), the file joins it; otherwise the file is
+// its own single-file batch. The Store Day write and this provenance row share
+// one transaction, so a file's data and its record land together or not at all.
+async function recordParsedFile(
+  ctx: MutationCtx,
+  args: {
+    batchUploadId: Id<"uploads"> | undefined;
+    store: Doc<"stores">;
+    uploadedBy: string;
+    storeDayId: Id<"storeDays">;
+    filename: string;
+    reportType: ReportType;
+  }
+): Promise<void> {
+  const uploadId =
+    args.batchUploadId ??
+    (await ctx.db.insert("uploads", {
+      storeId: args.store._id,
+      uploadedBy: args.uploadedBy,
+      fileCount: 1,
+    }));
+  await ctx.db.insert("uploadedFiles", {
+    uploadId,
+    storeDayId: args.storeDayId,
+    filename: args.filename,
+    reportType: args.reportType,
+    status: "parsed",
+  });
+}
+
+// Opens an upload batch for a multi-file action and returns its id. Every file
+// in the action — parsed, failed or unsupported — is recorded against it, so
+// the batch's fileCount is the total selected, not just the successes.
+export const createBatch = mutation({
+  args: { storeName: v.string(), fileCount: v.number() },
+  returns: v.object({ uploadId: v.id("uploads") }),
+  handler: async (ctx, args) => {
+    const caller = await requireCaller(ctx);
+    const store = await getOrCreateActiveStore(ctx, args.storeName);
+    const uploadId = await ctx.db.insert("uploads", {
+      storeId: store._id,
+      uploadedBy: caller.subject,
+      fileCount: args.fileCount,
+    });
+    return { uploadId };
+  },
+});
+
+// Records a file that never reached ingest: either unrecognised (unsupported)
+// or recognised but unparseable (failed). No Store Day is touched, so a bad
+// file in a batch leaves no partial data behind — only its provenance row.
+export const recordUnparsed = mutation({
+  args: {
+    uploadId: v.id("uploads"),
+    filename: v.string(),
+    status: v.union(v.literal("failed"), v.literal("unsupported")),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const permitted = await getPermittedStores(ctx);
+    const upload = await ctx.db.get(args.uploadId);
+    if (upload === null || !permitted.some((s) => s._id === upload.storeId)) {
+      throw new Error("Upload batch not found");
+    }
+    await ctx.db.insert("uploadedFiles", {
+      uploadId: args.uploadId,
+      filename: args.filename,
+      status: args.status,
+      reason: args.reason,
+    });
+    return null;
+  },
+});
 
 // The figures a Cashup report owns on a Store Day. Re-uploading a Cashup
 // overwrites exactly this subset; other report-types' fields are untouched.
@@ -49,6 +137,7 @@ export const cashup = mutation({
     storeName: v.string(),
     filename: v.string(),
     extract: cashupExtract,
+    uploadId: v.optional(v.id("uploads")),
   },
   returns: v.object({
     storeDayId: v.id("storeDays"),
@@ -91,17 +180,13 @@ export const cashup = mutation({
       await ctx.db.patch(storeDayId, fields);
     }
 
-    const uploadId = await ctx.db.insert("uploads", {
-      storeId: store._id,
+    await recordParsedFile(ctx, {
+      batchUploadId: args.uploadId,
+      store,
       uploadedBy: caller.subject,
-      fileCount: 1,
-    });
-    await ctx.db.insert("uploadedFiles", {
-      uploadId,
       storeDayId,
       filename: args.filename,
       reportType: "cashup",
-      status: "parsed",
     });
 
     return { storeDayId, needsReview };
@@ -138,6 +223,7 @@ export const royalty = mutation({
     storeName: v.string(),
     filename: v.string(),
     extract: royaltyExtract,
+    uploadId: v.optional(v.id("uploads")),
   },
   returns: v.object({
     storeDayId: v.id("storeDays"),
@@ -195,17 +281,13 @@ export const royalty = mutation({
       await ctx.db.patch(storeDayId, fields);
     }
 
-    const uploadId = await ctx.db.insert("uploads", {
-      storeId: store._id,
+    await recordParsedFile(ctx, {
+      batchUploadId: args.uploadId,
+      store,
       uploadedBy: caller.subject,
-      fileCount: 1,
-    });
-    await ctx.db.insert("uploadedFiles", {
-      uploadId,
       storeDayId,
       filename: args.filename,
       reportType: "royalty",
-      status: "parsed",
     });
 
     return { storeDayId, needsReview };
@@ -265,6 +347,7 @@ export const grossProfit = mutation({
     storeName: v.string(),
     filename: v.string(),
     extract: grossProfitExtract,
+    uploadId: v.optional(v.id("uploads")),
   },
   returns: v.object({
     storeDayId: v.id("storeDays"),
@@ -343,17 +426,13 @@ export const grossProfit = mutation({
       )
     );
 
-    const uploadId = await ctx.db.insert("uploads", {
-      storeId: store._id,
+    await recordParsedFile(ctx, {
+      batchUploadId: args.uploadId,
+      store,
       uploadedBy: caller.subject,
-      fileCount: 1,
-    });
-    await ctx.db.insert("uploadedFiles", {
-      uploadId,
       storeDayId,
       filename: args.filename,
       reportType: "grossProfit",
-      status: "parsed",
     });
 
     return { storeDayId, needsReview };
@@ -384,6 +463,7 @@ export const stockVariance = mutation({
     storeName: v.string(),
     filename: v.string(),
     extract: stockVarianceExtract,
+    uploadId: v.optional(v.id("uploads")),
   },
   returns: v.object({
     storeDayId: v.id("storeDays"),
@@ -446,17 +526,13 @@ export const stockVariance = mutation({
       )
     );
 
-    const uploadId = await ctx.db.insert("uploads", {
-      storeId: store._id,
+    await recordParsedFile(ctx, {
+      batchUploadId: args.uploadId,
+      store,
       uploadedBy: caller.subject,
-      fileCount: 1,
-    });
-    await ctx.db.insert("uploadedFiles", {
-      uploadId,
       storeDayId,
       filename: args.filename,
       reportType: "stockVariance",
-      status: "parsed",
     });
 
     return { storeDayId, needsReview };
@@ -475,6 +551,7 @@ export const stockWastage = mutation({
     storeName: v.string(),
     filename: v.string(),
     extract: stockWastageExtract,
+    uploadId: v.optional(v.id("uploads")),
   },
   returns: v.object({
     storeDayId: v.id("storeDays"),
@@ -502,17 +579,13 @@ export const stockWastage = mutation({
       await ctx.db.patch(storeDayId, { wasteCost: args.extract.wasteCost });
     }
 
-    const uploadId = await ctx.db.insert("uploads", {
-      storeId: store._id,
+    await recordParsedFile(ctx, {
+      batchUploadId: args.uploadId,
+      store,
       uploadedBy: caller.subject,
-      fileCount: 1,
-    });
-    await ctx.db.insert("uploadedFiles", {
-      uploadId,
       storeDayId,
       filename: args.filename,
       reportType: "stockWastage",
-      status: "parsed",
     });
 
     return { storeDayId, needsReview: existing?.needsReview ?? false };

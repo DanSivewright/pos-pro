@@ -30,6 +30,15 @@ export const listForStore = query({
       wasteCost: day.wasteCost ?? null,
       itemsProvider: day.itemsProvider ?? null,
       needsReview: day.needsReview ?? false,
+      // Which report-types have landed on this day, derived from the field
+      // subsets each owns. Drives the completeness display.
+      reports: {
+        cashup: day.netSales !== undefined,
+        royalty: day.royaltyDue !== undefined,
+        grossProfit: day.gpPercent !== undefined,
+        stockVariance: day.itemsProvider === "stockVariance",
+        stockWastage: day.wasteCost !== undefined,
+      },
     }));
   },
 });
