@@ -124,6 +124,25 @@ test("uploads a Stock Variance and renders the top variances", async ({
   await expect(page.getByTestId("top-variances").first()).toBeVisible();
 });
 
+test("the Control Tower shows the Store tile with its month-to-date net", async ({
+  page,
+}) => {
+  await setupClerkTestingToken({ page });
+
+  await page.goto("/dashboard");
+  await clerk.signIn({ page, emailAddress: userEmail });
+  await page.reload();
+
+  await page.setInputFiles('input[type="file"]', REFERENCE_CASHUP);
+  await expect(page.getByText(PARSED_TOAST)).toBeVisible();
+  await page.reload();
+
+  await expect(page.getByTestId("store-tile").first()).toBeVisible();
+  await expect(page.getByTestId("tile-mtd-net").first()).toHaveText(
+    "R12,571.00"
+  );
+});
+
 test("uploads a Stock Wastage and renders the waste cost", async ({ page }) => {
   await setupClerkTestingToken({ page });
 
