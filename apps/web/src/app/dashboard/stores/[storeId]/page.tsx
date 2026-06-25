@@ -61,7 +61,11 @@ export default function StoreDrillDown({
     <>
       <PageHeader
         actions={
-          <Button render={<Link href="/dashboard" />} variant="outline">
+          <Button
+            nativeButton={false}
+            render={<Link href="/dashboard" />}
+            variant="outline"
+          >
             <ArrowLeft className="size-4" />
             Control Tower
           </Button>

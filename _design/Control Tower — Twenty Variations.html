@@ -12,11 +12,11 @@
     >
     <style>
     /* ============================================================
-                                                                                                       pos-pro Control Tower · three Twenty-derived variations
-                                                                                                       A = Faithful  ·  B = Experimental (ops-heat)  ·  C = Minimal
-                                                                                                       Status colours (red/amber/green) are domain semantics only.
-                                                                                                       Money is rendered with tabular Geist Mono.
-                                                                                                       ============================================================ */
+                                                                                                               pos-pro Control Tower · three Twenty-derived variations
+                                                                                                               A = Faithful  ·  B = Experimental (ops-heat)  ·  C = Minimal
+                                                                                                               Status colours (red/amber/green) are domain semantics only.
+                                                                                                               Money is rendered with tabular Geist Mono.
+                                                                                                               ============================================================ */
 
     *,
     *::before,
@@ -173,8 +173,8 @@
     }
 
     /* =========================================================
-                                                                                                       VARIATION A — FAITHFUL (Twenty-true)
-                                                                                                       ========================================================= */
+                                                                                                               VARIATION A — FAITHFUL (Twenty-true)
+                                                                                                               ========================================================= */
     .a {
       --paper: #ffffff;
       --shell: #f3f2f0;
@@ -515,8 +515,8 @@
     }
 
     /* =========================================================
-                                                                                                       VARIATION B — EXPERIMENTAL (ops-heat / charcoal)
-                                                                                                       ========================================================= */
+                                                                                                               VARIATION B — EXPERIMENTAL (ops-heat / charcoal)
+                                                                                                               ========================================================= */
     .b {
       --bg: #161616;
       --panel: #1c1c1d;
@@ -857,8 +857,8 @@
     }
 
     /* =========================================================
-                                                                                                       VARIATION C — VERY MINIMAL
-                                                                                                       ========================================================= */
+                                                                                                               VARIATION C — VERY MINIMAL
+                                                                                                               ========================================================= */
     .c {
       --paper: #fcfcfb;
       --ink: #141414;
@@ -1416,16 +1416,16 @@
         )
         .join("");
       return `<tr>
-                                                                                                        <td><div class="store"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
-                                                                                                          <span><span class="nmn">${s.name}</span><br><span class="sub">${s.area}</span></span></div></td>
-                                                                                                        <td><span class="${pills[0]}">${pills[1]}</span></td>
-                                                                                                        <td class="r num">${fmt(s.net)}</td>
-                                                                                                        <td class="r num delta ${pos ? "pos" : "neg"}">${devTxt(s)}</td>
-                                                                                                        <td class="r num ${s.gp < 50 ? "delta neg" : ""}">${s.gp.toFixed(1)}%</td>
-                                                                                                        <td class="r num muted">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</td>
-                                                                                                        <td><span class="pips">${pipsHtml}</span></td>
-                                                                                                        <td class="muted">${s.last}</td>
-                                                                                                      </tr>`;
+                                                                                                                <td><div class="store"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
+                                                                                                                  <span><span class="nmn">${s.name}</span><br><span class="sub">${s.area}</span></span></div></td>
+                                                                                                                <td><span class="${pills[0]}">${pills[1]}</span></td>
+                                                                                                                <td class="r num">${fmt(s.net)}</td>
+                                                                                                                <td class="r num delta ${pos ? "pos" : "neg"}">${devTxt(s)}</td>
+                                                                                                                <td class="r num ${s.gp < 50 ? "delta neg" : ""}">${s.gp.toFixed(1)}%</td>
+                                                                                                                <td class="r num muted">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</td>
+                                                                                                                <td><span class="pips">${pipsHtml}</span></td>
+                                                                                                                <td class="muted">${s.last}</td>
+                                                                                                              </tr>`;
     }).join("");
 
     // ---------- B · heat cards ----------
@@ -1447,8 +1447,8 @@
         ])
         .at(-1);
       return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-                                                                                                        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
-                                                                                                        <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.2" fill="${color}"/></svg>`;
+                                                                                                                <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
+                                                                                                                <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.2" fill="${color}"/></svg>`;
     }
     document.getElementById("b-heat").innerHTML = STORES.map((s) => {
       const hex = STATUS_HEX.b[s.status];
@@ -1457,15 +1457,15 @@
         s.status
       ];
       return `<div class="hc ${s.status}">
-                                                                                                        <div class="row1"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
-                                                                                                          <span class="nm">${s.name}</span>
-                                                                                                          <span class="st"><span class="tag ${s.status}">● ${tagTxt}</span></span></div>
-                                                                                                        <div class="net">${fmt(s.net)}</div>
-                                                                                                        <div class="vs ${pos ? "pos" : "neg"}">${devTxt(s)} vs target</div>
-                                                                                                        ${spark(s.spark, hex)}
-                                                                                                        <div class="mini"><span>GP <span class="num">${s.gp.toFixed(1)}%</span></span>
-                                                                                                          <span>cash <span class="num">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</span></span></div>
-                                                                                                      </div>`;
+                                                                                                                <div class="row1"><span class="glyph" style="background:${s.glyph}">${s.code}</span>
+                                                                                                                  <span class="nm">${s.name}</span>
+                                                                                                                  <span class="st"><span class="tag ${s.status}">● ${tagTxt}</span></span></div>
+                                                                                                                <div class="net">${fmt(s.net)}</div>
+                                                                                                                <div class="vs ${pos ? "pos" : "neg"}">${devTxt(s)} vs target</div>
+                                                                                                                ${spark(s.spark, hex)}
+                                                                                                                <div class="mini"><span>GP <span class="num">${s.gp.toFixed(1)}%</span></span>
+                                                                                                                  <span>cash <span class="num">${s.cash < 0 ? "−" : ""}${fmt(s.cash)}</span></span></div>
+                                                                                                              </div>`;
     }).join("");
 
     // ---------- C · minimal rows ----------
@@ -1473,12 +1473,12 @@
       const hex = STATUS_HEX.c[s.status];
       const pos = dev(s) >= 0;
       return `<div class="row">
-                                                                                                        <span class="dot" style="background:${hex}"></span>
-                                                                                                        <span class="nm">${s.name}<small>${s.area}</small></span>
-                                                                                                        <span class="net">${fmt(s.net)}</span>
-                                                                                                        <span class="met"><span class="num ${pos ? "pos" : "neg"}">${devTxt(s)}</span><small>VS TARGET</small></span>
-                                                                                                        <span class="met"><span class="num">${s.gp.toFixed(1)}%</span><small>GROSS PROFIT</small></span>
-                                                                                                      </div>`;
+                                                                                                                <span class="dot" style="background:${hex}"></span>
+                                                                                                                <span class="nm">${s.name}<small>${s.area}</small></span>
+                                                                                                                <span class="net">${fmt(s.net)}</span>
+                                                                                                                <span class="met"><span class="num ${pos ? "pos" : "neg"}">${devTxt(s)}</span><small>VS TARGET</small></span>
+                                                                                                                <span class="met"><span class="num">${s.gp.toFixed(1)}%</span><small>GROSS PROFIT</small></span>
+                                                                                                              </div>`;
     }).join("");
 
     // ---------- switcher ----------
