@@ -11,13 +11,14 @@ import {
 import { cn } from "@pos-pro/ui/lib/utils";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { LayoutGrid, Menu } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { ModeToggle } from "./mode-toggle";
 
 interface NavItem {
-  href: string;
+  href: Route;
   icon: typeof LayoutGrid;
   isActive: (pathname: string) => boolean;
   label: string;
