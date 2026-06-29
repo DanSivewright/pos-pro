@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pos-pro · Digest email — three directions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ==========================================================
+         pos-pro daily-digest email — Huashu design pass
+         Three mobile-first directions, rendered at a phone width.
+         Brand: indigo #5B50E8 · Inter · "P" mark (Slice #10 / Twenty).
+         Severity colours are domain semantics ONLY:
+           critical #C8102E · watch #E8820C · ok #2E9E5B
+         The production build renders these via React Email → bulletproof
+         table HTML; this file is the visual-approval mockup.
+         ========================================================== */
+      :root {
+        --indigo: #5b50e8;
+        --indigo-ink: #4036b8;
+        --indigo-tint: #efedfd;
+        --ink: #1a1a1a;
+        --muted: #6b6b6b;
+        --faint: #9b9b97;
+        --shell: #f3f2f0;
+        --paper: #ffffff;
+        --hair: #e6e4e1;
+        --crit: #c8102e;
+        --crit-tint: #fceaec;
+        --watch: #e8820c;
+        --watch-tint: #fdf2e5;
+        --ok: #2e9e5b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: var(--ink);
+        background: #d9d7d3;
+      }
+      .mono {
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---- page scaffold ---- */
+      .page {
+        max-width: 1380px;
+        padding: 40px 28px 72px;
+        margin: 0 auto;
+      }
+      .page-head {
+        max-width: 880px;
+        margin: 0 auto 36px;
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--indigo);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+      .page-head h1 {
+        margin: 0 0 12px;
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+      }
+      .page-head p {
+        margin: 0 0 6px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      .assume {
+        padding: 14px 16px;
+        margin-top: 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--muted);
+        background: #fff;
+        border: 1px solid var(--hair);
+        border-radius: 10px;
+      }
+      .assume b {
+        color: var(--ink);
+      }
+
+      .rail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      .col {
+        flex: 0 0 auto;
+        width: 392px;
+      }
+      .col-label {
+        margin: 0 0 4px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .col-sub {
+        min-height: 32px;
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      /* ---- phone shell + email-client chrome ---- */
+      .phone {
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #cfcdc9;
+        border-radius: 26px;
+        box-shadow: 0 22px 50px -18px rgba(20, 20, 20, 0.4);
+      }
+      .screen {
+        overflow: hidden;
+        background: var(--shell);
+        border-radius: 18px;
+      }
+      .client {
+        padding: 10px 14px 11px;
+        background: #fafafa;
+        border-bottom: 1px solid var(--hair);
+      }
+      .client .from {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .client .from .avt {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.04em;
+        background: var(--indigo);
+        border-radius: 6px;
+      }
+      .client .subj {
+        margin: 7px 0 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+
+      /* === brand mark (P square) — shared === */
+      .pmark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        border-radius: 7px;
+      }
+
+      /* the email body wrapper — emails cap ~600, on phone it is full width */
+      .mail {
+        background: var(--paper);
+      }
+
+      /* ============================================================
+         DIRECTION A — BRANDED LEDGER  (faithful, dashboard-consistent)
+         ============================================================ */
+      .a .brandbar {
+        display: flex;
+        gap: 11px;
+        align-items: center;
+        padding: 16px 18px;
+        color: #fff;
+        background: var(--indigo);
+      }
+      .a .brandbar .pmark {
+        width: 30px;
+        height: 30px;
+        font-size: 17px;
+        color: var(--indigo);
+        background: #fff;
+      }
+      .a .brandbar .wm {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .a .brandbar .when {
+        margin-left: auto;
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .a .lede {
+        padding: 18px 18px 4px;
+      }
+      .a .lede h2 {
+        margin: 0 0 10px;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .a .summary {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+        padding: 5px 12px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--crit);
+        background: var(--crit-tint);
+        border-radius: 999px;
+      }
+      .a .summary .dot {
+        width: 7px;
+        height: 7px;
+        background: var(--crit);
+        border-radius: 50%;
+      }
+      .a .card {
+        margin: 16px 18px;
+        overflow: hidden;
+        border: 1px solid var(--hair);
+        border-radius: 12px;
+      }
+      .a .card-h {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--hair);
+      }
+      .a .card-h .sv {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+      }
+      .a .card-h .nm {
+        font-size: 14.5px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .a .chip {
+        padding: 3px 9px;
+        margin-left: auto;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-radius: 999px;
+      }
+      .a .row {
+        display: flex;
+        gap: 10px;
+        padding: 11px 14px;
+        font-size: 13px;
+        line-height: 1.45;
+        border-top: 1px solid #f1efec;
+      }
+      .a .row:first-of-type {
+        border-top: none;
+      }
+      .a .row .tick {
+        flex: 0 0 auto;
+        width: 6px;
+        height: 6px;
+        margin-top: 6px;
+        border-radius: 50%;
+      }
+      .a .row .msg {
+        color: #2e2e2e;
+      }
+      .a .cta-wrap {
+        padding: 4px 14px 16px;
+      }
+      .a .cta {
+        display: block;
+        padding: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--indigo);
+        text-align: center;
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        border: 1.5px solid var(--indigo);
+        border-radius: 9px;
+      }
+      .a .foot {
+        padding: 4px 18px 22px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--faint);
+      }
+
+      /* ============================================================
+         DIRECTION B — TRIAGE STATUS BOARD  (severity-forward, bold)
+         ============================================================ */
+      .b .brandbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 13px 18px;
+        color: #fff;
+        background: var(--indigo);
+      }
+      .b .brandbar .pmark {
+        width: 26px;
+        height: 26px;
+        font-size: 14px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.16);
+      }
+      .b .brandbar .wm {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .b .brandbar .when {
+        margin-left: auto;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+      .b .stats {
+        display: flex;
+        gap: 10px;
+        padding: 16px 16px 6px;
+      }
+      .b .stat {
+        flex: 1;
+        padding: 13px 14px;
+        color: #fff;
+        border-radius: 12px;
+      }
+      .b .stat.c {
+        background: var(--crit);
+      }
+      .b .stat.w {
+        background: var(--watch);
+      }
+      .b .stat .n {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.03em;
+      }
+      .b .stat .l {
+        margin-top: 5px;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        opacity: 0.92;
+      }
+      .b .store {
+        margin: 12px 16px 0;
+        overflow: hidden;
+        border: 1px solid var(--hair);
+        border-radius: 13px;
+      }
+      .b .store-h {
+        display: flex;
+        align-items: center;
+        padding: 11px 14px;
+        color: #fff;
+      }
+      .b .store-h.c {
+        background: var(--crit);
+      }
+      .b .store-h.w {
+        background: var(--watch);
+      }
+      .b .store-h .nm {
+        font-size: 14.5px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .b .store-h .tag {
+        padding: 3px 8px;
+        margin-left: auto;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 6px;
+      }
+      .b .ex {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        padding: 11px 14px;
+        background: #fff;
+        border-top: 1px solid #f1efec;
+      }
+      .b .ex:first-child {
+        border-top: none;
+      }
+      .b .ex .k {
+        flex: 0 0 74px;
+        padding-top: 1px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .b .ex .v {
+        font-size: 13px;
+        line-height: 1.4;
+        color: #2a2a2a;
+      }
+      .b .cta-wrap {
+        padding: 12px 14px 14px;
+        background: #fff;
+      }
+      .b .cta {
+        display: block;
+        padding: 11px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        text-align: center;
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        background: var(--indigo);
+        border-radius: 9px;
+      }
+      .b .foot {
+        padding: 16px 18px 22px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--faint);
+      }
+
+      /* ============================================================
+         DIRECTION C — EDITORIAL MINIMAL  (Twenty-minimal, novel)
+         ============================================================ */
+      .c .mail {
+        padding: 22px 22px 26px;
+      }
+      .c .lock {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .c .lock .pmark {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        color: #fff;
+        background: var(--ink);
+      }
+      .c .lock .wm {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .c .rule {
+        height: 1px;
+        margin: 16px 0;
+        background: var(--hair);
+      }
+      .c .h2 {
+        margin: 2px 0 4px;
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      .c .meta {
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .c .meta b {
+        font-weight: 600;
+        color: var(--crit);
+      }
+      .c .store {
+        margin-top: 26px;
+      }
+      .c .store-h {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+      .c .store-h .sq {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .c .store-h .nm {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .c .store-h .sev {
+        margin-left: auto;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .c .line {
+        display: flex;
+        gap: 14px;
+        align-items: baseline;
+        padding: 12px 0;
+        border-top: 1px solid var(--hair);
+      }
+      .c .line .t {
+        flex: 1;
+        font-size: 13.5px;
+        line-height: 1.45;
+        color: #2a2a2a;
+      }
+      .c .line .t .lab {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--faint);
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+      }
+      .c .clink {
+        display: inline-block;
+        margin-top: 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--indigo);
+        text-decoration: none;
+      }
+      .c .foot {
+        padding-top: 14px;
+        margin-top: 28px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--faint);
+        border-top: 1px solid var(--hair);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="page-head">
+        <p class="eyebrow">Huashu pass · email design</p>
+        <h1>Daily exception digest — three directions</h1>
+        <p>
+          Designed from the pos-pro app identity (indigo · Inter · the “P” mark,
+          Slice&nbsp;#10) so the email feels like the dashboard it links into.
+          Red / amber / green are reserved strictly for severity. Shown
+          mobile-first at phone width — the production build renders these via
+          React&nbsp;Email into Outlook/Gmail-safe table HTML.
+        </p>
+        <div class="assume">
+          <b>Assumptions baked into this mockup:</b> same content as today
+          (exceptions worst-first, clean stores hidden) · a new per-store “View
+          in Control Tower” CTA · sample data = Sandton City (Critical) +
+          Rosebank Mall (Watch). <b>Open detail:</b> figures are shown in
+          polished ZAR (<span class="mono">R9&nbsp;000,00</span>); the live
+          message strings currently emit <span class="mono">R9000.00</span> — a
+          small formatting tidy-up I’d fold in. Pick a direction (or mix), then
+          I build it in React&nbsp;Email.
+        </div>
+      </div>
+
+      <div class="rail">
+        <!-- ============== DIRECTION A ============== -->
+        <div class="col">
+          <p class="col-label">A · Branded Ledger</p>
+          <p class="col-sub">
+            Faithful + on-brand. Indigo header, bordered store cards, outline
+            CTA. Safest, most dashboard-consistent.
+          </p>
+          <div class="phone">
+            <div class="screen">
+              <div class="client">
+                <div class="from">
+                  <span class="avt">P</span>
+                  <span>pos-pro alerts &lt;alerts@hellobuildmore.com&gt;</span>
+                </div>
+                <p class="subj">Daily exception digest — 26 June 2026</p>
+              </div>
+              <div class="mail a">
+                <div class="brandbar">
+                  <span class="pmark">P</span>
+                  <span class="wm">pos-pro</span>
+                  <span class="when">Fri 26 Jun 2026</span>
+                </div>
+                <div class="lede">
+                  <h2>Daily exception digest</h2>
+                  <span class="summary"
+                    ><span class="dot"></span>1 critical · 1 watch</span
+                  >
+                </div>
+
+                <div class="card">
+                  <div class="card-h">
+                    <span class="sv" style="background: var(--crit)"></span>
+                    <span class="nm">Sandton City</span>
+                    <span
+                      class="chip"
+                      style="background: var(--crit-tint); color: var(--crit)"
+                      >Critical</span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--crit)"></span
+                    ><span class="msg"
+                      >Net sales <span class="mono">R9&nbsp;000,00</span> is
+                      −40,0% vs target
+                      <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--crit)"></span
+                    ><span class="msg">Gross profit 48,00% below 55%</span>
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--crit)"></span
+                    ><span class="msg"
+                      >Cash variance <span class="mono">R120,00</span></span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--crit)"></span
+                    ><span class="msg"
+                      >Stock variance
+                      <span class="mono">−R350,00</span></span
+                    >
+                  </div>
+                  <div class="cta-wrap">
+                    <a class="cta" href="#">View in Control Tower →</a>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-h">
+                    <span class="sv" style="background: var(--watch)"></span>
+                    <span class="nm">Rosebank Mall</span>
+                    <span
+                      class="chip"
+                      style="background: var(--watch-tint); color: var(--watch)"
+                      >Watch</span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--watch)"></span
+                    ><span class="msg"
+                      >Net sales <span class="mono">R13&nbsp;500,00</span> is
+                      −10,0% vs target
+                      <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--watch)"></span
+                    ><span class="msg">Gross profit 54,00% below 55%</span>
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--watch)"></span
+                    ><span class="msg"
+                      >Cash variance <span class="mono">R40,00</span></span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="tick" style="background: var(--watch)"></span
+                    ><span class="msg"
+                      >Stock variance
+                      <span class="mono">−R120,00</span></span
+                    >
+                  </div>
+                  <div class="cta-wrap">
+                    <a class="cta" href="#">View in Control Tower →</a>
+                  </div>
+                </div>
+
+                <p class="foot">Stores with no exceptions are not shown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== DIRECTION B ============== -->
+        <div class="col">
+          <p class="col-label">B · Triage Status Board</p>
+          <p class="col-sub">
+            Severity-forward. Count tiles up top, bold colour-banded store
+            headers, metric-labelled rows. Most scannable.
+          </p>
+          <div class="phone">
+            <div class="screen">
+              <div class="client">
+                <div class="from">
+                  <span class="avt">P</span>
+                  <span>pos-pro alerts &lt;alerts@hellobuildmore.com&gt;</span>
+                </div>
+                <p class="subj">Daily exception digest — 26 June 2026</p>
+              </div>
+              <div class="mail b">
+                <div class="brandbar">
+                  <span class="pmark">P</span>
+                  <span class="wm">pos-pro · Daily digest</span>
+                  <span class="when">Fri 26 Jun 2026</span>
+                </div>
+
+                <div class="stats">
+                  <div class="stat c">
+                    <div class="n">1</div>
+                    <div class="l">Critical</div>
+                  </div>
+                  <div class="stat w">
+                    <div class="n">1</div>
+                    <div class="l">Watch</div>
+                  </div>
+                </div>
+
+                <div class="store">
+                  <div class="store-h c">
+                    <span class="nm">Sandton City</span>
+                    <span class="tag">CRITICAL</span>
+                  </div>
+                  <div class="ex">
+                    <span class="k">Sales</span
+                    ><span class="v"
+                      ><span class="mono">R9&nbsp;000,00</span> · −40,0% vs
+                      target <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="ex">
+                    <span class="k">Gross profit</span
+                    ><span class="v">48,00% · below 55%</span>
+                  </div>
+                  <div class="ex">
+                    <span class="k">Cash</span
+                    ><span class="v"
+                      >variance <span class="mono">R120,00</span></span
+                    >
+                  </div>
+                  <div class="ex">
+                    <span class="k">Stock</span
+                    ><span class="v"
+                      >variance <span class="mono">−R350,00</span></span
+                    >
+                  </div>
+                  <div class="cta-wrap">
+                    <a class="cta" href="#">View Sandton City →</a>
+                  </div>
+                </div>
+
+                <div class="store">
+                  <div class="store-h w">
+                    <span class="nm">Rosebank Mall</span>
+                    <span class="tag">WATCH</span>
+                  </div>
+                  <div class="ex">
+                    <span class="k">Sales</span
+                    ><span class="v"
+                      ><span class="mono">R13&nbsp;500,00</span> · −10,0% vs
+                      target <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="ex">
+                    <span class="k">Gross profit</span
+                    ><span class="v">54,00% · below 55%</span>
+                  </div>
+                  <div class="ex">
+                    <span class="k">Cash</span
+                    ><span class="v"
+                      >variance <span class="mono">R40,00</span></span
+                    >
+                  </div>
+                  <div class="ex">
+                    <span class="k">Stock</span
+                    ><span class="v"
+                      >variance <span class="mono">−R120,00</span></span
+                    >
+                  </div>
+                  <div class="cta-wrap">
+                    <a class="cta" href="#">View Rosebank Mall →</a>
+                  </div>
+                </div>
+
+                <p class="foot">Stores with no exceptions are not shown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== DIRECTION C ============== -->
+        <div class="col">
+          <p class="col-label">C · Editorial Minimal</p>
+          <p class="col-sub">
+            Twenty-minimal. No cards — hairlines, whitespace, typographic
+            hierarchy, text-link CTA. Most restrained.
+          </p>
+          <div class="phone">
+            <div class="screen">
+              <div class="client">
+                <div class="from">
+                  <span class="avt">P</span>
+                  <span>pos-pro alerts &lt;alerts@hellobuildmore.com&gt;</span>
+                </div>
+                <p class="subj">Daily exception digest — 26 June 2026</p>
+              </div>
+              <div class="mail c">
+                <div class="lock">
+                  <span class="pmark">P</span><span class="wm">pos-pro</span>
+                </div>
+                <div class="rule"></div>
+                <div class="h2">Daily exception digest</div>
+                <div class="meta">
+                  Friday, 26 June 2026 · <b>1 critical</b>, 1 watch
+                </div>
+
+                <div class="store">
+                  <div class="store-h">
+                    <span class="sq" style="background: var(--crit)"></span>
+                    <span class="nm">Sandton City</span>
+                    <span class="sev" style="color: var(--crit)">Critical</span>
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Net sales</span
+                      ><span class="mono">R9&nbsp;000,00</span> — −40,0% vs
+                      target <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Gross profit</span>48,00%, below
+                      55%</span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Cash variance</span
+                      ><span class="mono">R120,00</span></span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Stock variance</span
+                      ><span class="mono">−R350,00</span></span
+                    >
+                  </div>
+                  <a class="clink" href="#">View in Control Tower →</a>
+                </div>
+
+                <div class="store">
+                  <div class="store-h">
+                    <span class="sq" style="background: var(--watch)"></span>
+                    <span class="nm">Rosebank Mall</span>
+                    <span class="sev" style="color: var(--watch)">Watch</span>
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Net sales</span
+                      ><span class="mono">R13&nbsp;500,00</span> — −10,0% vs
+                      target <span class="mono">R15&nbsp;000,00</span></span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Gross profit</span>54,00%, below
+                      55%</span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Cash variance</span
+                      ><span class="mono">R40,00</span></span
+                    >
+                  </div>
+                  <div class="line">
+                    <span class="t"
+                      ><span class="lab">Stock variance</span
+                      ><span class="mono">−R120,00</span></span
+                    >
+                  </div>
+                  <a class="clink" href="#">View in Control Tower →</a>
+                </div>
+
+                <p class="foot">Stores with no exceptions are not shown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

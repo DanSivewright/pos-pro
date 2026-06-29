@@ -93,9 +93,25 @@ export const SEVERITY_RANK: Record<Severity, number> = {
   critical: 2,
 };
 
+// Groups the integer part into threes for the thousands separator.
+const THOUSANDS = /\B(?=(\d{3})+(?!\d))/g;
+
+// South African Rand from integer cents in the local convention: space-grouped
+// thousands and a comma decimal, e.g. 900_000 -> "R9 000,00", -35_000 ->
+// "-R350,00". The grouping space is non-breaking so a figure never wraps
+// mid-number in an email client.
 function rand(cents: number): string {
   const sign = cents < 0 ? "-" : "";
-  return `${sign}R${(Math.abs(cents) / 100).toFixed(2)}`;
+  const whole = Math.floor(Math.abs(cents) / 100);
+  const frac = (Math.abs(cents) % 100).toString().padStart(2, "0");
+  const grouped = whole.toString().replace(THOUSANDS, "\u00A0");
+  return `${sign}R${grouped},${frac}`;
+}
+
+// A percentage with a comma decimal, matching the Rand convention, e.g.
+// pct(-40, 1) -> "-40,0", pct(48, 2) -> "48,00".
+function pct(value: number, decimals: number): string {
+  return value.toFixed(decimals).replace(".", ",");
 }
 
 function salesException(
@@ -114,11 +130,11 @@ function salesException(
     netSales <= salesTarget * (1 + SALES_CRITICAL_DEVIATION)
       ? "critical"
       : "watch";
-  const pct = ((netSales / salesTarget - 1) * 100).toFixed(1);
+  const deviation = pct((netSales / salesTarget - 1) * 100, 1);
   return {
     metric: "sales",
     severity,
-    message: `Net sales ${rand(netSales)} is ${pct}% vs target ${rand(salesTarget)}`,
+    message: `Net sales ${rand(netSales)} is ${deviation}% vs target ${rand(salesTarget)}`,
   };
 }
 
@@ -131,7 +147,7 @@ function gpException(gpPercent: number | null): Exception | null {
   return {
     metric: "gp",
     severity,
-    message: `Gross profit ${gpPercent.toFixed(2)}% below ${GP_WATCH_PERCENT}%`,
+    message: `Gross profit ${pct(gpPercent, 2)}% below ${GP_WATCH_PERCENT}%`,
   };
 }
 

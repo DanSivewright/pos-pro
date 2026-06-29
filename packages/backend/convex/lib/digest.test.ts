@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSections, type DigestStore, renderDigest } from "./digest";
+import { buildSections, type DigestStore } from "./digest";
 import {
   computeExceptions,
   type ExceptionInput,
@@ -121,24 +121,10 @@ describe("buildSections", () => {
       "Watch Store",
     ]);
   });
-});
 
-describe("renderDigest", () => {
-  it("omits clean stores and leads with the worst", () => {
-    const html = renderDigest(STORES, "2026-06-23");
-    expect(html).not.toContain("Clean Store");
-    expect(html.indexOf("Critical Store")).toBeLessThan(
-      html.indexOf("Watch Store")
-    );
-    expect(html).toContain("2026-06-23");
-  });
-
-  it("renders an all-clear when every store is clean", () => {
-    const html = renderDigest(
-      [{ storeName: "Clean Store", input: cleanInput() }],
-      "2026-06-23"
-    );
-    expect(html).toContain("All clear");
-    expect(html).not.toContain("Clean Store");
+  it("derives each section's severity from its worst exception", () => {
+    const [critical, watch] = buildSections(STORES);
+    expect(critical.severity).toBe("critical");
+    expect(watch.severity).toBe("watch");
   });
 });

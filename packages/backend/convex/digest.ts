@@ -1,60 +1,23 @@
+"use node";
+
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction, internalQuery } from "./_generated/server";
-import { type DigestStore, renderDigest } from "./lib/digest";
+import { internalAction } from "./_generated/server";
+import { renderDigestEmail } from "./emails/digestEmail";
 
-const MAX_STORES = 200;
+const MAX_MEMBERS = 200;
 const CLERK_API = "https://api.clerk.com/v1";
 const RESEND_API = "https://api.resend.com/emails";
 
-// The latest Store Day per Store, flattened to the figures the digest reasons
-// over. Internal: the cron runs it with no caller, so it is never store-scoped
-// — it deliberately reads every Store to build the super-user's consolidated
-// view and each Store's own section.
-export const dataForDigest = internalQuery({
-  args: {},
-  returns: v.array(
-    v.object({
-      storeName: v.string(),
-      clerkOrgId: v.string(),
-      input: v.object({
-        netSales: v.union(v.number(), v.null()),
-        salesTarget: v.union(v.number(), v.null()),
-        gpPercent: v.union(v.number(), v.null()),
-        cashVariance: v.union(v.number(), v.null()),
-        stockVarianceTotal: v.union(v.number(), v.null()),
-      }),
-    })
-  ),
-  handler: async (ctx) => {
-    const stores = await ctx.db.query("stores").take(MAX_STORES);
-    const rows = await Promise.all(
-      stores.map(async (store) => {
-        const latest = await ctx.db
-          .query("storeDays")
-          .withIndex("by_storeId_and_date", (q) => q.eq("storeId", store._id))
-          .order("desc")
-          .first();
-        return {
-          storeName: store.name,
-          clerkOrgId: store.clerkOrgId,
-          input: {
-            netSales: latest?.netSales ?? null,
-            salesTarget: store.salesTarget ?? null,
-            gpPercent: latest?.gpPercent ?? null,
-            cashVariance: latest?.cashVariance ?? null,
-            stockVarianceTotal: latest?.stockVarianceTotal ?? null,
-          },
-        };
-      })
-    );
-    return rows;
-  },
-});
-
-// SAST (UTC+2) calendar date label for the digest header.
+// Human SAST (Africa/Johannesburg) date label for the subject + brand bar,
+// e.g. "26 June 2026".
 function sastDateLabel(): string {
-  return new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Johannesburg",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 }
 
 async function clerkGet(
@@ -76,7 +39,7 @@ async function orgMemberEmails(
   secret: string
 ): Promise<string[]> {
   const body = await clerkGet(
-    `/organizations/${orgId}/memberships?limit=${MAX_STORES}`,
+    `/organizations/${orgId}/memberships?limit=${MAX_MEMBERS}`,
     secret
   );
   const emails: string[] = [];
@@ -93,7 +56,7 @@ async function orgMemberEmails(
 
 // The emails of every super-user (publicMetadata.superuser === true).
 async function superuserEmails(secret: string): Promise<string[]> {
-  const body = await clerkGet(`/users?limit=${MAX_STORES}`, secret);
+  const body = await clerkGet(`/users?limit=${MAX_MEMBERS}`, secret);
   const emails: string[] = [];
   for (const user of body.data ?? []) {
     const typed = user as {
@@ -145,9 +108,11 @@ async function sendEmail(
 
 // The daily exception digest. Triggered by the cron. Reads every Store's latest
 // figures, renders the consolidated digest for super-users and a per-Store
-// digest for each Store's members, and sends them via Resend. Degrades to a
-// no-op log when the env keys are absent, so the cron never errors in a
-// deployment that has not yet configured email.
+// digest for each Store's members via React Email, and sends them via Resend.
+// Runs in the Node runtime because the React Email renderer uses
+// react-dom/server. Degrades to a no-op log when the env keys are absent, so
+// the cron never errors in a deployment that has not yet configured email. The
+// per-Store CTA deep-links into the Control Tower when DIGEST_APP_URL is set.
 export const send = internalAction({
   args: {},
   returns: v.null(),
@@ -161,14 +126,15 @@ export const send = internalAction({
       );
       return null;
     }
+    const appUrl = process.env.DIGEST_APP_URL ?? null;
 
-    const stores = await ctx.runQuery(internal.digest.dataForDigest, {});
+    const stores = await ctx.runQuery(internal.digestData.dataForDigest, {});
     const dateLabel = sastDateLabel();
     const subject = `Daily exception digest — ${dateLabel}`;
 
     let failures = 0;
 
-    const consolidated = renderDigest(stores as DigestStore[], dateLabel);
+    const consolidated = await renderDigestEmail(stores, dateLabel, appUrl);
     const superRecipients = await superuserEmails(clerkSecret);
     const superOk = await sendEmail(
       resendKey,
@@ -182,7 +148,7 @@ export const send = internalAction({
     }
 
     for (const store of stores) {
-      const html = renderDigest([store as DigestStore], dateLabel);
+      const html = await renderDigestEmail([store], dateLabel, appUrl);
       const recipients = await orgMemberEmails(store.clerkOrgId, clerkSecret);
       const ok = await sendEmail(resendKey, from, recipients, subject, html);
       if (!ok) {

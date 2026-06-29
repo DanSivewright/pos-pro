@@ -10,6 +10,9 @@
 
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
+import type * as digestData from "../digestData.js";
+import type * as emails_digestEmail from "../emails/digestEmail.js";
+import type * as emails_emailLayout from "../emails/emailLayout.js";
 import type * as health from "../health.js";
 import type * as ingest from "../ingest.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -27,6 +30,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   digest: typeof digest;
+  digestData: typeof digestData;
+  "emails/digestEmail": typeof emails_digestEmail;
+  "emails/emailLayout": typeof emails_emailLayout;
   health: typeof health;
   ingest: typeof ingest;
   "lib/authz": typeof lib_authz;
