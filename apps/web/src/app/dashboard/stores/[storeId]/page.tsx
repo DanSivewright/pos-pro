@@ -13,6 +13,7 @@ import { Completeness } from "@/components/completeness";
 import { Canvas, PageHeader } from "@/components/dashboard-shell";
 import { type MetricHintKey, MetricLabel } from "@/components/metric-hint";
 import { TopStockVariances } from "@/components/top-stock-variances";
+import { UploadHistory } from "@/components/upload-history";
 import { formatRand } from "@/lib/format";
 
 function Metric({
@@ -163,6 +164,9 @@ export default function StoreDrillDown({
               ))}
             </ul>
           )}
+          <div className="mt-8 border-border border-t pt-6">
+            <UploadHistory storeId={storeRef} />
+          </div>
         </div>
       </Canvas>
     </>

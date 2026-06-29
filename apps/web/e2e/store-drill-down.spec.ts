@@ -194,3 +194,25 @@ test("uploads a Stock Wastage and renders the waste cost", async ({ page }) => {
 
   await expect(page.getByTestId("waste-cost").first()).toHaveText("R13.24");
 });
+
+test("the Upload History panel lists a submitted file and its status", async ({
+  page,
+}) => {
+  await setupClerkTestingToken({ page });
+
+  await page.goto("/dashboard");
+  await clerk.signIn({ page, emailAddress: userEmail });
+  await page.reload();
+
+  await page.setInputFiles('input[type="file"]', REFERENCE_CASHUP);
+  await expect(page.getByText(PARSED_TOAST)).toBeVisible();
+
+  await page.locator('a[href^="/dashboard/stores/"]').first().click();
+
+  const history = page.getByTestId("upload-history");
+  await expect(history).toBeVisible();
+  await expect(history.getByTestId("history-row").first()).toBeVisible();
+  await expect(history.getByTestId("history-status").first()).toHaveText(
+    "parsed"
+  );
+});

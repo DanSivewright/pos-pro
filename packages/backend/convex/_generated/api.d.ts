@@ -20,6 +20,7 @@ import type * as lib_digest from "../lib/digest.js";
 import type * as lib_thresholds from "../lib/thresholds.js";
 import type * as storeDays from "../storeDays.js";
 import type * as stores from "../stores.js";
+import type * as uploads from "../uploads.js";
 
 import type {
   ApiFromModules,
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "lib/thresholds": typeof lib_thresholds;
   storeDays: typeof storeDays;
   stores: typeof stores;
+  uploads: typeof uploads;
 }>;
 
 /**
