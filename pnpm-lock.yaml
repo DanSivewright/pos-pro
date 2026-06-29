@@ -166,6 +166,9 @@ importers:
 
   packages/backend:
     dependencies:
+      '@convex-dev/rate-limiter':
+        specifier: ^0.3.2
+        version: 0.3.2(convex@1.41.0(@clerk/react@6.10.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@react-email/components':
         specifier: ^1.0.12
         version: 1.0.12(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -581,6 +584,15 @@ packages:
       '@playwright/test':
         optional: true
       cypress:
+        optional: true
+
+  '@convex-dev/rate-limiter@0.3.2':
+    resolution: {integrity: sha512-+oBPsBfFbzdxiF/9XaaTQmVnvDlvEfg/c69/v8LxTbw4VLuiflIKlfnPQL8OS0azXQQ11hcPWHmU8ytFmHKDXA==}
+    peerDependencies:
+      convex: ^1.24.8
+      react: ^18.2.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
         optional: true
 
   '@date-fns/tz@1.5.0':
@@ -3941,6 +3953,12 @@ snapshots:
     transitivePeerDependencies:
       - react
       - react-dom
+
+  '@convex-dev/rate-limiter@0.3.2(convex@1.41.0(@clerk/react@6.10.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      convex: 1.41.0(@clerk/react@6.10.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+    optionalDependencies:
+      react: 19.2.7
 
   '@date-fns/tz@1.5.0': {}
 

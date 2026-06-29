@@ -19,6 +19,7 @@ import type * as lib_authz from "../lib/authz.js";
 import type * as lib_digest from "../lib/digest.js";
 import type * as lib_rollup from "../lib/rollup.js";
 import type * as lib_thresholds from "../lib/thresholds.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as storeDays from "../storeDays.js";
 import type * as storeMonths from "../storeMonths.js";
 import type * as stores from "../stores.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "lib/digest": typeof lib_digest;
   "lib/rollup": typeof lib_rollup;
   "lib/thresholds": typeof lib_thresholds;
+  rateLimit: typeof rateLimit;
   storeDays: typeof storeDays;
   storeMonths: typeof storeMonths;
   stores: typeof stores;
@@ -74,4 +76,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

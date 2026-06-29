@@ -39,6 +39,7 @@ const RANGE_ROYALTY = `${REF}/rp-first-batch/Royalty_From_01-06-2026_To_07-06-20
 const UNSUPPORTED = `${REF}/rp-first-batch/Deliveries_From_07-06-2026_To_07-06-2026_Printed_On_07-06-2026.pdf`;
 
 const RANGE_REASON = /Multi-day range/;
+const OVERSIZED_NAME = /huge\.pdf/;
 
 interface ResultRow {
   date?: string;
@@ -49,20 +50,26 @@ interface ResultRow {
   status: string;
 }
 
-async function post(relPaths: string[]): Promise<ResultRow[]> {
+function postFiles(files: File[]): Promise<Response> {
   const form = new FormData();
-  for (const rel of relPaths) {
-    const bytes = await readFile(join(process.cwd(), rel));
-    form.append(
-      "files",
-      new File([bytes], basename(rel), { type: "application/pdf" })
-    );
+  for (const file of files) {
+    form.append("files", file);
   }
   const request = new Request("http://localhost/api/upload", {
     method: "POST",
     body: form,
   });
-  const response = await POST(request);
+  return POST(request);
+}
+
+async function post(relPaths: string[]): Promise<ResultRow[]> {
+  const files = await Promise.all(
+    relPaths.map(async (rel) => {
+      const bytes = await readFile(join(process.cwd(), rel));
+      return new File([bytes], basename(rel), { type: "application/pdf" });
+    })
+  );
+  const response = await postFiles(files);
   const body = (await response.json()) as { results: ResultRow[] };
   return body.results;
 }
@@ -79,6 +86,9 @@ function argsFor(name: string): Record<string, unknown> | undefined {
 beforeEach(() => {
   fetchMutation.mockReset();
   fetchMutation.mockImplementation((ref: FunctionReference<"mutation">) => {
+    if (getFunctionName(ref) === "rateLimit:checkUpload") {
+      return Promise.resolve({ ok: true, retryAfter: 0 });
+    }
     if (getFunctionName(ref) === "ingest:createBatch") {
       return Promise.resolve({ uploadId: "upload_1" });
     }
@@ -156,5 +166,42 @@ describe("upload route — full pipeline", () => {
 
     expect(results[0].status).toBe("unsupported");
     expect(argsFor("ingest:recordUnparsed")?.status).toBe("unsupported");
+  });
+});
+
+describe("upload route — guards", () => {
+  const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+  it("returns 429 with Retry-After when the org is rate limited", async () => {
+    fetchMutation.mockImplementation((ref: FunctionReference<"mutation">) => {
+      if (getFunctionName(ref) === "rateLimit:checkUpload") {
+        return Promise.resolve({ ok: false, retryAfter: 3000 });
+      }
+      return Promise.resolve({ uploadId: "upload_1" });
+    });
+
+    const file = new File([new Uint8Array(10)], "cashup.pdf", {
+      type: "application/pdf",
+    });
+    const response = await postFiles([file]);
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("3");
+    // The limit gates before any batch is opened or any file is read.
+    expect(argsFor("ingest:createBatch")).toBeUndefined();
+  });
+
+  it("returns 413 for an oversized file before opening a batch or parsing", async () => {
+    const huge = new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], "huge.pdf", {
+      type: "application/pdf",
+    });
+    const response = await postFiles([huge]);
+
+    expect(response.status).toBe(413);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toMatch(OVERSIZED_NAME);
+    // No batch, no ingest — the oversized file never reached the extractor.
+    expect(argsFor("ingest:createBatch")).toBeUndefined();
+    expect(argsFor("ingest:cashup")).toBeUndefined();
   });
 });

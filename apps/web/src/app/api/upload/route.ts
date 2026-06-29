@@ -23,6 +23,11 @@ export const runtime = "nodejs";
 // input order, below.
 const UPLOAD_CONCURRENCY = 5;
 
+// Hard ceiling on a single file's size. POS report PDFs are small text exports;
+// anything this large is malformed or hostile, and parsing it in memory in the
+// Node boundary risks OOM/timeout. Oversized files are refused before any read.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
 interface FileResult {
   date?: string;
   filename: string;
@@ -185,6 +190,17 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  // Per-org upload rate limit, enforced in Convex (the source of truth) so it
+  // holds across stateless function instances. One batch spends one token.
+  const limit = await fetchMutation(api.rateLimit.checkUpload, {}, { token });
+  if (!limit.ok) {
+    const retryAfterSeconds = Math.ceil(limit.retryAfter / 1000);
+    return NextResponse.json(
+      { error: "Too many uploads — please wait a moment and try again" },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+    );
+  }
+
   const client = await clerkClient();
   const org = await client.organizations.getOrganization({
     organizationId: orgId,
@@ -196,6 +212,17 @@ export async function POST(request: Request): Promise<Response> {
     .filter((entry): entry is File => entry instanceof File);
   if (files.length === 0) {
     return NextResponse.json({ error: "No files provided" }, { status: 400 });
+  }
+
+  // Refuse oversized files before opening a batch or reading any bytes, so a
+  // pathological PDF can never reach the in-memory extractor.
+  const oversized = files.filter((file) => file.size > MAX_UPLOAD_BYTES);
+  if (oversized.length > 0) {
+    const names = oversized.map((file) => file.name).join(", ");
+    return NextResponse.json(
+      { error: `File too large (max 15MB): ${names}` },
+      { status: 413 }
+    );
   }
 
   // One batch for the whole action; every file (parsed, failed or unsupported)

@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@convex-dev/rate-limiter": "^0.3.2",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.9",
     "convex": "catalog:",
