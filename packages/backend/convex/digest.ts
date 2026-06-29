@@ -111,17 +111,21 @@ async function superuserEmails(secret: string): Promise<string[]> {
   return emails;
 }
 
+// Sends one digest email via Resend. Returns true on success (or when there are
+// no recipients to send to). On failure it reads Resend's error body and logs
+// it with the recipient list + status so a rejected send is visible in the
+// Convex logs (`mcp__convex__logs status:"failure"`) instead of vanishing.
 async function sendEmail(
   apiKey: string,
   from: string,
   to: string[],
   subject: string,
   html: string
-): Promise<void> {
+): Promise<boolean> {
   if (to.length === 0) {
-    return;
+    return true;
   }
-  await fetch(RESEND_API, {
+  const response = await fetch(RESEND_API, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -129,6 +133,14 @@ async function sendEmail(
     },
     body: JSON.stringify({ from, to, subject, html }),
   });
+  if (!response.ok) {
+    const body = await response.text();
+    console.error(
+      `Digest send failed (${response.status}) to ${to.join(", ")}: ${body}`
+    );
+    return false;
+  }
+  return true;
 }
 
 // The daily exception digest. Triggered by the cron. Reads every Store's latest
@@ -154,14 +166,34 @@ export const send = internalAction({
     const dateLabel = sastDateLabel();
     const subject = `Daily exception digest — ${dateLabel}`;
 
+    let failures = 0;
+
     const consolidated = renderDigest(stores as DigestStore[], dateLabel);
     const superRecipients = await superuserEmails(clerkSecret);
-    await sendEmail(resendKey, from, superRecipients, subject, consolidated);
+    const superOk = await sendEmail(
+      resendKey,
+      from,
+      superRecipients,
+      subject,
+      consolidated
+    );
+    if (!superOk) {
+      failures += 1;
+    }
 
     for (const store of stores) {
       const html = renderDigest([store as DigestStore], dateLabel);
       const recipients = await orgMemberEmails(store.clerkOrgId, clerkSecret);
-      await sendEmail(resendKey, from, recipients, subject, html);
+      const ok = await sendEmail(resendKey, from, recipients, subject, html);
+      if (!ok) {
+        failures += 1;
+      }
+    }
+
+    if (failures > 0) {
+      console.error(
+        `Digest run completed with ${failures} failed send(s) — see errors above`
+      );
     }
     return null;
   },
