@@ -14,6 +14,7 @@ import { cn } from "@pos-pro/ui/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
+import { MetricLabel } from "@/components/metric-hint";
 import { formatRand } from "@/lib/format";
 
 const CENTS_PER_RAND = 100;
@@ -184,13 +185,17 @@ function StoreCard({ tile }: { tile: Tile }) {
       </div>
       <dl className="grid grid-cols-3 gap-3 text-sm">
         <div>
-          <dt className="text-muted-foreground text-xs">MTD net</dt>
+          <dt className="text-muted-foreground text-xs">
+            <MetricLabel hintKey="mtdNet">MTD net</MetricLabel>
+          </dt>
           <dd className="tabular-nums" data-testid="tile-mtd-net">
             {formatRand(tile.mtdNet)}
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-xs">vs target</dt>
+          <dt className="text-muted-foreground text-xs">
+            <MetricLabel hintKey="vsTarget">vs target</MetricLabel>
+          </dt>
           <dd
             className={cn("tabular-nums", vsTargetClass(tile.vsTarget))}
             data-testid="tile-vs-target"
@@ -199,7 +204,9 @@ function StoreCard({ tile }: { tile: Tile }) {
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-xs">GP%</dt>
+          <dt className="text-muted-foreground text-xs">
+            <MetricLabel hintKey="gpPercent">GP%</MetricLabel>
+          </dt>
           <dd className="tabular-nums" data-testid="tile-gp">
             {tile.gpPercent === null ? "—" : `${tile.gpPercent}%`}
           </dd>
@@ -247,11 +254,23 @@ export function ControlTower() {
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Store</TableHead>
-            <TableHead className="text-right">MTD net</TableHead>
-            <TableHead className="text-right">vs target</TableHead>
-            <TableHead className="text-right">GP%</TableHead>
-            <TableHead>Status</TableHead>
-            {canEdit && <TableHead className="text-right">Target</TableHead>}
+            <TableHead className="text-right">
+              <MetricLabel hintKey="mtdNet">MTD net</MetricLabel>
+            </TableHead>
+            <TableHead className="text-right">
+              <MetricLabel hintKey="vsTarget">vs target</MetricLabel>
+            </TableHead>
+            <TableHead className="text-right">
+              <MetricLabel hintKey="gpPercent">GP%</MetricLabel>
+            </TableHead>
+            <TableHead>
+              <MetricLabel hintKey="status">Status</MetricLabel>
+            </TableHead>
+            {canEdit && (
+              <TableHead className="text-right">
+                <MetricLabel hintKey="target">Target</MetricLabel>
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>

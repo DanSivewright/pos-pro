@@ -11,23 +11,28 @@ import { type ReactNode, use } from "react";
 import { ChannelMixChart } from "@/components/channel-mix-chart";
 import { Completeness } from "@/components/completeness";
 import { Canvas, PageHeader } from "@/components/dashboard-shell";
+import { type MetricHintKey, MetricLabel } from "@/components/metric-hint";
 import { TopStockVariances } from "@/components/top-stock-variances";
 import { formatRand } from "@/lib/format";
 
 function Metric({
   label,
+  hintKey,
   testid,
   emphasis,
   children,
 }: {
   label: string;
+  hintKey: MetricHintKey;
   testid: string;
   emphasis?: boolean;
   children: ReactNode;
 }) {
   return (
     <div>
-      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dt className="text-muted-foreground text-xs">
+        <MetricLabel hintKey={hintKey}>{label}</MetricLabel>
+      </dt>
       <dd
         className={cn(
           "mt-0.5 tabular-nums",
@@ -99,22 +104,39 @@ export default function StoreDrillDown({
                     )}
                   </div>
                   <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                    <Metric emphasis label="Net sales" testid="net-sales">
+                    <Metric
+                      emphasis
+                      hintKey="netSales"
+                      label="Net sales"
+                      testid="net-sales"
+                    >
                       {rand(day.netSales)}
                     </Metric>
-                    <Metric label="Cash variance" testid="cash-variance">
+                    <Metric
+                      hintKey="cashVariance"
+                      label="Cash variance"
+                      testid="cash-variance"
+                    >
                       {rand(day.cashVariance)}
                     </Metric>
-                    <Metric label="Royalty due" testid="royalty-due">
+                    <Metric
+                      hintKey="royaltyDue"
+                      label="Royalty due"
+                      testid="royalty-due"
+                    >
                       {rand(day.royaltyDue)}
                     </Metric>
-                    <Metric label="GP%" testid="gp-percent">
+                    <Metric hintKey="gpPercent" label="GP%" testid="gp-percent">
                       {pct(day.gpPercent)}
                     </Metric>
-                    <Metric label="FC%" testid="fc-percent">
+                    <Metric hintKey="fcPercent" label="FC%" testid="fc-percent">
                       {pct(day.fcPercent)}
                     </Metric>
-                    <Metric label="Waste cost" testid="waste-cost">
+                    <Metric
+                      hintKey="wasteCost"
+                      label="Waste cost"
+                      testid="waste-cost"
+                    >
                       {rand(day.wasteCost)}
                     </Metric>
                   </dl>
