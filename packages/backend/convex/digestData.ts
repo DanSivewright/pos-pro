@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
+import { resolveThresholds, thresholdsValidator } from "./lib/thresholds";
 
 // One Store's digest input row: its name, its Clerk org (for the member
 // recipient lookup) and the latest figures the digest reasons over. Shared so
@@ -14,6 +15,9 @@ export const digestStoreValidator = v.object({
     cashVariance: v.union(v.number(), v.null()),
     stockVarianceTotal: v.union(v.number(), v.null()),
   }),
+  // The Store's resolved thresholds (per-store overrides merged over defaults),
+  // carried through the fan-out so each `sendOne` judges exceptions correctly.
+  thresholds: thresholdsValidator,
 });
 
 // The latest Store Day per Store, flattened to the figures the digest reasons
@@ -44,6 +48,7 @@ export const dataForDigest = internalQuery({
             cashVariance: latest?.cashVariance ?? null,
             stockVarianceTotal: latest?.stockVarianceTotal ?? null,
           },
+          thresholds: resolveThresholds(store),
         };
       })
     );

@@ -4,12 +4,16 @@ import {
   type ExceptionInput,
   SEVERITY_RANK,
   type Severity,
+  type Thresholds,
 } from "./thresholds";
 
-// One Store's figures going into a digest. The renderer derives the section.
+// One Store's figures going into a digest, plus the resolved thresholds its
+// exceptions are judged against (per-store overrides already merged over the
+// global defaults). The renderer derives the section.
 export interface DigestStore {
   input: ExceptionInput;
   storeName: string;
+  thresholds: Thresholds;
 }
 
 // A Store that has at least one exception, ready to render. Clean Stores never
@@ -27,7 +31,7 @@ export interface DigestSection {
 export function buildSections(stores: DigestStore[]): DigestSection[] {
   const sections: DigestSection[] = [];
   for (const store of stores) {
-    const exceptions = computeExceptions(store.input);
+    const exceptions = computeExceptions(store.input, store.thresholds);
     if (exceptions.length === 0) {
       continue;
     }

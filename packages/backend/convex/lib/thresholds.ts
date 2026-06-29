@@ -1,25 +1,77 @@
-// Global exception thresholds (PRD §7). Stores share these constants; only the
-// per-Store sales target is configurable. A Store Day's status is the worst of
-// its available signals — sales-vs-target and GP% for the Control Tower.
+// Exception thresholds (PRD §7). Each band has a global default below; a Store
+// may override any band individually (see `stores` schema + `resolveThresholds`).
+// A Store Day's status is the worst of its available signals — sales-vs-target
+// and GP% for the Control Tower.
+
+import { v } from "convex/values";
 
 export type Status = "green" | "amber" | "red";
 
-// Sales: net-sales deviation from target. -10% Watch, -20% Critical.
-const SALES_WATCH_DEVIATION = -0.1;
-const SALES_CRITICAL_DEVIATION = -0.2;
+// The complete set of bands a status/exception calculation reasons over. Sales
+// deviations are signed fractions (loss negative); GP is percent; cash/stock are
+// signed cents (loss negative).
+export interface Thresholds {
+  cashCriticalCents: number;
+  cashWatchCents: number;
+  gpCriticalPercent: number;
+  gpWatchPercent: number;
+  salesCriticalDeviation: number;
+  salesWatchDeviation: number;
+  stockCriticalCents: number;
+  stockWatchCents: number;
+}
 
-// Gross profit: percentage points. <55% Watch, <50% Critical.
-const GP_WATCH_PERCENT = 55;
-const GP_CRITICAL_PERCENT = 50;
+// The global defaults, applied to any Store that has not overridden a band.
+// Sales: -10% Watch, -20% Critical. GP: <55% Watch, <50% Critical. Cash: ≥R30
+// Watch, ≥R100 Critical. Stock: −R100 Watch, −R300 Critical.
+export const DEFAULT_THRESHOLDS: Thresholds = {
+  salesWatchDeviation: -0.1,
+  salesCriticalDeviation: -0.2,
+  gpWatchPercent: 55,
+  gpCriticalPercent: 50,
+  cashWatchCents: 3000,
+  cashCriticalCents: 10_000,
+  stockWatchCents: -10_000,
+  stockCriticalCents: -30_000,
+};
 
-// Cash variance: absolute deviation in cents. ≥R30 Watch, ≥R100 Critical.
-const CASH_WATCH_CENTS = 3000;
-const CASH_CRITICAL_CENTS = 10_000;
+// Validator for a fully-resolved threshold set (every band present), used to
+// carry resolved thresholds through the digest fan-out wire format.
+export const thresholdsValidator = v.object({
+  salesWatchDeviation: v.number(),
+  salesCriticalDeviation: v.number(),
+  gpWatchPercent: v.number(),
+  gpCriticalPercent: v.number(),
+  cashWatchCents: v.number(),
+  cashCriticalCents: v.number(),
+  stockWatchCents: v.number(),
+  stockCriticalCents: v.number(),
+});
 
-// Stock variance total: signed cents (loss is negative). −R100 Watch, −R300
-// Critical.
-const STOCK_WATCH_CENTS = -10_000;
-const STOCK_CRITICAL_CENTS = -30_000;
+// Merges a Store's per-band overrides over the global defaults, yielding a
+// complete threshold set. Any band the Store leaves unset (undefined) falls back
+// to its default, so a partial override is honoured band-by-band.
+export function resolveThresholds(overrides: Partial<Thresholds>): Thresholds {
+  return {
+    salesWatchDeviation:
+      overrides.salesWatchDeviation ?? DEFAULT_THRESHOLDS.salesWatchDeviation,
+    salesCriticalDeviation:
+      overrides.salesCriticalDeviation ??
+      DEFAULT_THRESHOLDS.salesCriticalDeviation,
+    gpWatchPercent:
+      overrides.gpWatchPercent ?? DEFAULT_THRESHOLDS.gpWatchPercent,
+    gpCriticalPercent:
+      overrides.gpCriticalPercent ?? DEFAULT_THRESHOLDS.gpCriticalPercent,
+    cashWatchCents:
+      overrides.cashWatchCents ?? DEFAULT_THRESHOLDS.cashWatchCents,
+    cashCriticalCents:
+      overrides.cashCriticalCents ?? DEFAULT_THRESHOLDS.cashCriticalCents,
+    stockWatchCents:
+      overrides.stockWatchCents ?? DEFAULT_THRESHOLDS.stockWatchCents,
+    stockCriticalCents:
+      overrides.stockCriticalCents ?? DEFAULT_THRESHOLDS.stockCriticalCents,
+  };
+}
 
 // Worst-first ordering: a higher rank is a worse Store.
 export const STATUS_RANK: Record<Status, number> = {
@@ -28,27 +80,27 @@ export const STATUS_RANK: Record<Status, number> = {
   red: 2,
 };
 
-function salesStatus(deviation: number | null): Status {
+function salesStatus(deviation: number | null, t: Thresholds): Status {
   if (deviation === null) {
     return "green";
   }
-  if (deviation <= SALES_CRITICAL_DEVIATION) {
+  if (deviation <= t.salesCriticalDeviation) {
     return "red";
   }
-  if (deviation <= SALES_WATCH_DEVIATION) {
+  if (deviation <= t.salesWatchDeviation) {
     return "amber";
   }
   return "green";
 }
 
-function gpStatus(gpPercent: number | null): Status {
+function gpStatus(gpPercent: number | null, t: Thresholds): Status {
   if (gpPercent === null) {
     return "green";
   }
-  if (gpPercent < GP_CRITICAL_PERCENT) {
+  if (gpPercent < t.gpCriticalPercent) {
     return "red";
   }
-  if (gpPercent < GP_WATCH_PERCENT) {
+  if (gpPercent < t.gpWatchPercent) {
     return "amber";
   }
   return "green";
@@ -56,13 +108,14 @@ function gpStatus(gpPercent: number | null): Status {
 
 // The Store Day status: the worse of the sales-vs-target and GP% signals. A
 // null signal contributes nothing (treated as green). With no signals at all
-// the Store is green.
+// the Store is green. Thresholds default to the globals when not supplied.
 export function computeStatus(
   salesDeviation: number | null,
-  gpPercent: number | null
+  gpPercent: number | null,
+  thresholds: Thresholds = DEFAULT_THRESHOLDS
 ): Status {
-  const sales = salesStatus(salesDeviation);
-  const gp = gpStatus(gpPercent);
+  const sales = salesStatus(salesDeviation, thresholds);
+  const gp = gpStatus(gpPercent, thresholds);
   return STATUS_RANK[sales] >= STATUS_RANK[gp] ? sales : gp;
 }
 
@@ -116,18 +169,19 @@ function pct(value: number, decimals: number): string {
 
 function salesException(
   netSales: number | null,
-  salesTarget: number | null
+  salesTarget: number | null,
+  t: Thresholds
 ): Exception | null {
   if (netSales === null || salesTarget === null || salesTarget <= 0) {
     return null;
   }
   // Compare against integer-cents thresholds rather than the floating-point
-  // deviation, so a Store exactly on the -10%/-20% line lands cleanly.
-  if (netSales > salesTarget * (1 + SALES_WATCH_DEVIATION)) {
+  // deviation, so a Store exactly on the Watch/Critical line lands cleanly.
+  if (netSales > salesTarget * (1 + t.salesWatchDeviation)) {
     return null;
   }
   const severity: Severity =
-    netSales <= salesTarget * (1 + SALES_CRITICAL_DEVIATION)
+    netSales <= salesTarget * (1 + t.salesCriticalDeviation)
       ? "critical"
       : "watch";
   const deviation = pct((netSales / salesTarget - 1) * 100, 1);
@@ -138,29 +192,35 @@ function salesException(
   };
 }
 
-function gpException(gpPercent: number | null): Exception | null {
-  if (gpPercent === null || gpPercent >= GP_WATCH_PERCENT) {
+function gpException(
+  gpPercent: number | null,
+  t: Thresholds
+): Exception | null {
+  if (gpPercent === null || gpPercent >= t.gpWatchPercent) {
     return null;
   }
   const severity: Severity =
-    gpPercent < GP_CRITICAL_PERCENT ? "critical" : "watch";
+    gpPercent < t.gpCriticalPercent ? "critical" : "watch";
   return {
     metric: "gp",
     severity,
-    message: `Gross profit ${pct(gpPercent, 2)}% below ${GP_WATCH_PERCENT}%`,
+    message: `Gross profit ${pct(gpPercent, 2)}% below ${t.gpWatchPercent}%`,
   };
 }
 
-function cashException(cashVariance: number | null): Exception | null {
+function cashException(
+  cashVariance: number | null,
+  t: Thresholds
+): Exception | null {
   if (cashVariance === null) {
     return null;
   }
   const magnitude = Math.abs(cashVariance);
-  if (magnitude < CASH_WATCH_CENTS) {
+  if (magnitude < t.cashWatchCents) {
     return null;
   }
   const severity: Severity =
-    magnitude >= CASH_CRITICAL_CENTS ? "critical" : "watch";
+    magnitude >= t.cashCriticalCents ? "critical" : "watch";
   return {
     metric: "cash",
     severity,
@@ -168,12 +228,15 @@ function cashException(cashVariance: number | null): Exception | null {
   };
 }
 
-function stockException(stockVarianceTotal: number | null): Exception | null {
-  if (stockVarianceTotal === null || stockVarianceTotal > STOCK_WATCH_CENTS) {
+function stockException(
+  stockVarianceTotal: number | null,
+  t: Thresholds
+): Exception | null {
+  if (stockVarianceTotal === null || stockVarianceTotal > t.stockWatchCents) {
     return null;
   }
   const severity: Severity =
-    stockVarianceTotal <= STOCK_CRITICAL_CENTS ? "critical" : "watch";
+    stockVarianceTotal <= t.stockCriticalCents ? "critical" : "watch";
   return {
     metric: "stock",
     severity,
@@ -183,13 +246,17 @@ function stockException(stockVarianceTotal: number | null): Exception | null {
 
 // All threshold breaches on a Store Day, worst-first. A pure function over the
 // day's figures: the same input always yields the same exceptions, so it can be
-// exhaustively unit-tested at the boundaries.
-export function computeExceptions(input: ExceptionInput): Exception[] {
+// exhaustively unit-tested at the boundaries. Thresholds default to the globals
+// when not supplied.
+export function computeExceptions(
+  input: ExceptionInput,
+  thresholds: Thresholds = DEFAULT_THRESHOLDS
+): Exception[] {
   const candidates = [
-    salesException(input.netSales, input.salesTarget),
-    gpException(input.gpPercent),
-    cashException(input.cashVariance),
-    stockException(input.stockVarianceTotal),
+    salesException(input.netSales, input.salesTarget, thresholds),
+    gpException(input.gpPercent, thresholds),
+    cashException(input.cashVariance, thresholds),
+    stockException(input.stockVarianceTotal, thresholds),
   ];
   return candidates
     .filter((exception): exception is Exception => exception !== null)

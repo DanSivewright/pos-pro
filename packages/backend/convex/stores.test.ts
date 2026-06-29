@@ -226,3 +226,59 @@ test("a store user may not set a sales target", async () => {
     })
   ).rejects.toThrow("super-users");
 });
+
+test("a per-store threshold override changes the Control Tower status, then resets", async () => {
+  const t = convexTest(schema, modules);
+  const month = sastMonth();
+  const storeId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("stores", {
+      clerkOrgId: "org_a",
+      name: "Store A",
+      salesTarget: 100_000,
+    });
+    // On target (sales green) with a GP of 58 — healthy under the default 55
+    // watch band, so the tile is green.
+    await ctx.db.insert("storeDays", {
+      storeId: id,
+      date: `${month}-05`,
+      netSales: 100_000,
+      gpPercent: 58,
+    });
+    return id;
+  });
+  await refreshRollups(t);
+
+  const asSuperuser = t.withIdentity({ subject: "owner", superuser: true });
+  const before = await asSuperuser.query(api.stores.controlTower, {});
+  expect(before[0]?.status).toBe("green");
+
+  // A stricter GP watch band (60) makes the same day amber; the critical band
+  // is omitted and so falls back to the default 50.
+  await asSuperuser.mutation(api.stores.setThresholds, {
+    storeId,
+    gpWatchPercent: 60,
+  });
+  const after = await asSuperuser.query(api.stores.controlTower, {});
+  expect(after[0]?.status).toBe("amber");
+
+  // A full replace with the band omitted clears the override (the field is
+  // deleted), so the status falls back to the default green.
+  await asSuperuser.mutation(api.stores.setThresholds, { storeId });
+  const reset = await asSuperuser.query(api.stores.controlTower, {});
+  expect(reset[0]?.status).toBe("green");
+});
+
+test("a store user may not set thresholds", async () => {
+  const t = convexTest(schema, modules);
+  const storeId = await t.run(async (ctx) =>
+    ctx.db.insert("stores", { clerkOrgId: "org_a", name: "Store A" })
+  );
+
+  const asStoreA = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+  await expect(
+    asStoreA.mutation(api.stores.setThresholds, {
+      storeId,
+      gpWatchPercent: 60,
+    })
+  ).rejects.toThrow("super-users");
+});

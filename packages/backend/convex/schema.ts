@@ -19,6 +19,18 @@ export default defineSchema({
     name: v.string(),
     // Monthly expected net sales in cents. Configuration, not extracted.
     salesTarget: v.optional(v.number()),
+    // Per-store exception-threshold overrides. Each is optional and independent:
+    // an absent band falls back to the global default (convex/lib/thresholds.ts).
+    // Stored in the compute functions' internal units — sales deviations as
+    // signed fractions (e.g. -0.1), GP as percent, cash/stock as signed cents.
+    salesWatchDeviation: v.optional(v.number()),
+    salesCriticalDeviation: v.optional(v.number()),
+    gpWatchPercent: v.optional(v.number()),
+    gpCriticalPercent: v.optional(v.number()),
+    cashWatchCents: v.optional(v.number()),
+    cashCriticalCents: v.optional(v.number()),
+    stockWatchCents: v.optional(v.number()),
+    stockCriticalCents: v.optional(v.number()),
   }).index("by_clerkOrgId", ["clerkOrgId"]),
 
   // One Store's trading on one calendar date. The atomic spine. Each

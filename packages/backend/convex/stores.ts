@@ -3,7 +3,12 @@ import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getPermittedStores, requireCaller } from "./lib/authz";
-import { computeStatus, STATUS_RANK, type Status } from "./lib/thresholds";
+import {
+  computeStatus,
+  resolveThresholds,
+  STATUS_RANK,
+  type Status,
+} from "./lib/thresholds";
 
 const SAST_OFFSET_MS = 2 * 60 * 60 * 1000;
 
@@ -77,7 +82,7 @@ async function buildTile(
     mtdNet,
     vsTarget,
     gpPercent,
-    status: computeStatus(salesDeviation, gpPercent),
+    status: computeStatus(salesDeviation, gpPercent, resolveThresholds(store)),
   };
 }
 
@@ -113,5 +118,44 @@ export const setSalesTarget = mutation({
       throw new Error("Only super-users may set a sales target");
     }
     await ctx.db.patch(args.storeId, { salesTarget: args.salesTarget });
+  },
+});
+
+// Replaces a Store's exception-threshold overrides. Super-users only. Each band
+// is optional: a provided value overrides that band, an omitted one is cleared
+// (the field is deleted, so the Store falls back to the global default). This is
+// a full replace of the override set, mirroring an editor that submits the whole
+// form. The bands drive the Control Tower status and the digest exceptions.
+export const setThresholds = mutation({
+  args: {
+    storeId: v.id("stores"),
+    salesWatchDeviation: v.optional(v.number()),
+    salesCriticalDeviation: v.optional(v.number()),
+    gpWatchPercent: v.optional(v.number()),
+    gpCriticalPercent: v.optional(v.number()),
+    cashWatchCents: v.optional(v.number()),
+    cashCriticalCents: v.optional(v.number()),
+    stockWatchCents: v.optional(v.number()),
+    stockCriticalCents: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const caller = await requireCaller(ctx);
+    if (!caller.superuser) {
+      throw new Error("Only super-users may set thresholds");
+    }
+    // Every band is listed explicitly so an omitted one is `undefined` in the
+    // patch — which deletes the field, resetting that band to the global
+    // default. (Spreading the args would drop absent keys and leave a previously
+    // set override in place, so this is a true full replace of the set.)
+    await ctx.db.patch(args.storeId, {
+      salesWatchDeviation: args.salesWatchDeviation,
+      salesCriticalDeviation: args.salesCriticalDeviation,
+      gpWatchPercent: args.gpWatchPercent,
+      gpCriticalPercent: args.gpCriticalPercent,
+      cashWatchCents: args.cashWatchCents,
+      cashCriticalCents: args.cashCriticalCents,
+      stockWatchCents: args.stockWatchCents,
+      stockCriticalCents: args.stockCriticalCents,
+    });
   },
 });
