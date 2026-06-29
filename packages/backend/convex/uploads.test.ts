@@ -7,6 +7,8 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
 
+const FIRST_PAGE = { numItems: 50, cursor: null };
+
 const REFERENCE_EXTRACT = {
   date: "2026-06-07",
   grossSales: 1_266_090,
@@ -43,10 +45,12 @@ test("a Store user cannot read another Store's upload history", async () => {
   });
 
   const storeAId = await firstStoreId(t);
-  const history = await asStoreB.query(api.uploads.listForStore, {
+  const result = await asStoreB.query(api.uploads.listForStore, {
     storeId: storeAId,
+    paginationOpts: FIRST_PAGE,
   });
-  expect(history).toEqual([]);
+  expect(result.page).toEqual([]);
+  expect(result.isDone).toBe(true);
 });
 
 test("history lists batches newest-first", async () => {
@@ -76,7 +80,10 @@ test("history lists batches newest-first", async () => {
   });
 
   const storeId = await firstStoreId(t);
-  const history = await asStore.query(api.uploads.listForStore, { storeId });
+  const { page: history } = await asStore.query(api.uploads.listForStore, {
+    storeId,
+    paginationOpts: FIRST_PAGE,
+  });
 
   expect(history).toHaveLength(2);
   // Newest (the failed batch) leads.
@@ -115,7 +122,10 @@ test("parsed, failed and unsupported files all appear with their shape", async (
   });
 
   const storeId = await firstStoreId(t);
-  const history = await asStore.query(api.uploads.listForStore, { storeId });
+  const { page: history } = await asStore.query(api.uploads.listForStore, {
+    storeId,
+    paginationOpts: FIRST_PAGE,
+  });
 
   expect(history).toHaveLength(1);
   const batch = history[0];
@@ -141,17 +151,18 @@ test("parsed, failed and unsupported files all appear with their shape", async (
   expect(failed?.reason).toBe("Could not read PDF");
 });
 
-test("history is capped to the recent window", async () => {
+test("history pages through batches, then exhausts", async () => {
   const t = convexTest(schema, modules);
   const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
 
-  // Open the Store once, then seed more batches than the cap directly.
+  // Open the Store once, then seed more batches than one page directly.
   await asStore.mutation(api.ingest.createBatch, {
     storeName: "Roman's Pizza Boitumelo",
     fileCount: 1,
   });
   const storeId = await firstStoreId(t);
 
+  // 60 seeded + 1 from createBatch = 61 total, spanning two pages of 50.
   const TOTAL = 60;
   await t.run(async (ctx) => {
     for (let i = 0; i < TOTAL; i++) {
@@ -163,6 +174,17 @@ test("history is capped to the recent window", async () => {
     }
   });
 
-  const history = await asStore.query(api.uploads.listForStore, { storeId });
-  expect(history).toHaveLength(50);
+  const first = await asStore.query(api.uploads.listForStore, {
+    storeId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(first.page).toHaveLength(50);
+  expect(first.isDone).toBe(false);
+
+  const second = await asStore.query(api.uploads.listForStore, {
+    storeId,
+    paginationOpts: { numItems: 50, cursor: first.continueCursor },
+  });
+  expect(second.page).toHaveLength(11);
+  expect(second.isDone).toBe(true);
 });

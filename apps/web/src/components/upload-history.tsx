@@ -2,6 +2,7 @@
 
 import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
+import { Button } from "@pos-pro/ui/components/button";
 import {
   Table,
   TableBody,
@@ -11,10 +12,13 @@ import {
   TableRow,
 } from "@pos-pro/ui/components/table";
 import { cn } from "@pos-pro/ui/lib/utils";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 const DESKTOP_QUERY = "(min-width: 768px)";
+
+// One window of upload batches per page.
+const BATCHES_PER_PAGE = 50;
 
 // Render exactly one layout (table on desktop, cards on mobile) so testids are
 // never duplicated or hidden — mirrors the Control Tower pattern.
@@ -224,7 +228,15 @@ function MobileHistory({ batches }: { batches: HistoryBatch[] }) {
 }
 
 export function UploadHistory({ storeId }: { storeId: Id<"stores"> }) {
-  const batches = useQuery(api.uploads.listForStore, { storeId });
+  const {
+    results: batches,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.uploads.listForStore,
+    { storeId },
+    { initialNumItems: BATCHES_PER_PAGE }
+  );
   const isDesktop = useIsDesktop();
 
   return (
@@ -235,14 +247,13 @@ export function UploadHistory({ storeId }: { storeId: Id<"stores"> }) {
         are never retained.
       </p>
       <div className="mt-3">
-        {batches === undefined && (
+        {status === "LoadingFirstPage" && (
           <p className="text-muted-foreground text-sm">Loading…</p>
         )}
-        {batches?.length === 0 && (
+        {status !== "LoadingFirstPage" && batches.length === 0 && (
           <p className="text-muted-foreground text-sm">No uploads yet.</p>
         )}
-        {batches !== undefined &&
-          batches.length > 0 &&
+        {batches.length > 0 &&
           (isDesktop ? (
             <div className="rounded-lg border border-border">
               <DesktopHistory batches={batches} />
@@ -250,6 +261,18 @@ export function UploadHistory({ storeId }: { storeId: Id<"stores"> }) {
           ) : (
             <MobileHistory batches={batches} />
           ))}
+        {(status === "CanLoadMore" || status === "LoadingMore") && (
+          <div className="mt-3 flex justify-center">
+            <Button
+              data-testid="load-more-history"
+              disabled={status === "LoadingMore"}
+              onClick={() => loadMore(BATCHES_PER_PAGE)}
+              variant="outline"
+            >
+              {status === "LoadingMore" ? "Loading…" : "Load more"}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

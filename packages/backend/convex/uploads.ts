@@ -1,16 +1,17 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { getPermittedStores } from "./lib/authz";
 
-// The most recent upload batches surfaced per Store. Older batches accumulate
-// unbounded, so the history is capped to a recent window. Cursor pagination is
-// the correct fix and is tracked in DEBT.md.
-const HISTORY_LIMIT = 50;
+// The shape a paginated query returns to an unpermitted caller: a single empty,
+// exhausted page. Keeps the IDOR contract (returns nothing, never throws) while
+// staying compatible with `usePaginatedQuery` on the client.
+const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
-// The upload audit trail for one Store, newest batch first. Store-scoped like
-// storeDays.listForStore: a caller only sees the history of a Store they are
-// permitted to view (their active org, or any Store for a super-user). An
-// unpermitted storeId returns nothing rather than erroring.
+// The upload audit trail for one Store, newest batch first, one page at a time.
+// Store-scoped like storeDays.listForStore: a caller only sees the history of a
+// Store they are permitted to view (their active org, or any Store for a
+// super-user). An unpermitted storeId returns an empty page rather than erroring.
 //
 // Each batch carries its files' provenance: the parse status, the report-type,
 // the resolved Store Day date (when the file landed on one) and the failure
@@ -19,21 +20,21 @@ const HISTORY_LIMIT = 50;
 // id; resolving it to a human name needs a Clerk fetch (an action, not a
 // query) and is tracked as a follow-up in DEBT.md.
 export const listForStore = query({
-  args: { storeId: v.id("stores") },
+  args: { storeId: v.id("stores"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const permitted = await getPermittedStores(ctx);
     const allowed = permitted.some((store) => store._id === args.storeId);
     if (!allowed) {
-      return [];
+      return EMPTY_PAGE;
     }
-    const uploads = await ctx.db
+    const result = await ctx.db
       .query("uploads")
       .withIndex("by_storeId", (q) => q.eq("storeId", args.storeId))
       .order("desc")
-      .take(HISTORY_LIMIT);
+      .paginate(args.paginationOpts);
 
-    return await Promise.all(
-      uploads.map(async (upload) => {
+    const page = await Promise.all(
+      result.page.map(async (upload) => {
         const fileRows = await ctx.db
           .query("uploadedFiles")
           .withIndex("by_uploadId", (q) => q.eq("uploadId", upload._id))
@@ -64,5 +65,7 @@ export const listForStore = query({
         };
       })
     );
+
+    return { ...result, page };
   },
 });
