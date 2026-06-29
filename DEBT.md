@@ -19,6 +19,22 @@ deliberate MVP scoping decision (see grill session / ADRs), not an accident.
 | **Upload History shows raw Clerk subject, not a human name** | `uploads.uploadedBy` is the raw Clerk subject id. Resolving it to a name needs a Clerk API fetch, which is an action — a `query` cannot make it, and the live history is a reactive `useQuery`. | The "uploaded by" column reads e.g. `user_3FY…` rather than a person. | Resolve subjects → display names via a Clerk fetch in an action (batch + cache by subject), or denormalise the uploader's name onto the `uploads` row at ingest time. |
 | **Scaffold ultracite debt (35 errors)** | Better-T-Stack/shadcn scaffold ships files that violate ultracite (nested ternaries + unused/namespace imports in `apps/web` demo files; `packages/ui` shadcn components; CSS `noDescendingSpecificity` in `globals.css`). These are template/demo/vendored files slated for replacement. Renaming any Convex files would also change their `api.*` refs (high blast radius). | Repo-wide `ultracite check` is red, but every file authored by the build (all slice + audit files) is clean. | Address in a dedicated cleanup: auto-fix `apps/web` demo files (or delete when superseded); rename Convex demo files to kebab-case and update refs; reconcile `packages/ui` shadcn components with ultracite (or scope them out of lint). |
 
+## Scalability ceilings (verified from code, 2026-06-29)
+
+Per-tenant access is indexed and isolated, so the **store-user** path scales to
+low-thousands of concurrent viewers and years of history without change. The
+limits below are the walls for the **super-user / multi-store** scale. Ordered
+by what breaks first. Comfortable today: ~150–200 stores; correct all four and
+the same foundation reaches thousands.
+
+| Item | Why deferred | Cost / risk | Correct fix |
+|---|---|---|---|
+| **`.take(200)` hard store cap (silent truncation)** | `MAX_STORES = 200` in `lib/authz.ts` bounds `getPermittedStores`; `digestData.dataForDigest` reads `take(200)` too. A simple bounded read was right for the MVP cohort. | **Past 200 total stores, the super-user Control Tower (`stores.ts:97`) shows an arbitrary 200-store subset and the daily digest silently skips the rest — no error.** This is the first thing to break, and it fails silently (worse than throwing). | Paginate both reads (cursor or batched `take`); the Control Tower can't just raise the constant because of the fan-out below — it needs the rollup. |
+| **Super-user Control Tower fan-out (no monthly rollup)** | `controlTower` `Promise.all`s `buildTile` over every permitted store, each doing a month-range `.collect()` (`stores.ts:55`). Computing live was simplest and correct. | At 200 stores ≈ 6,200 doc reads per query, recomputed reactively on **any** in-month Store Day write. Bounded at 200; wasteful and slow well beyond. | Denormalise a `storeMonths` aggregate (mtdNet, latest GP%) updated on ingest; the Control Tower reads one row per store. |
+| **Upload route: sequential per-file processing, no rate limit, large-PDF risk** | `route.ts` runs files in a `for...of await` loop, each doing in-memory `unpdf` extraction + a Convex round-trip, in one Node serverless invocation. | A multi-file batch of large reports can run 10–30s → **Vercel function timeout / OOM on a single very large PDF**, independent of overall scale. No rate limiting on the endpoint. | Parallelise the per-file loop (bounded concurrency); cap/stream large PDFs; add per-org rate limiting. Throughput already scales horizontally (one invocation per upload). |
+| **Digest send: serial loop of external calls** | `digest.send` iterates stores making sequential Clerk membership lookups + Resend sends. Serial was simplest for the MVP cohort. | 200 stores ⇒ 200+ serial HTTP calls in one action ⇒ minutes of wall-clock + exposure to Resend rate limits and Convex action time limits. | Fan out with `ctx.scheduler.runAfter(0, …)` per store (or batched), so each send is its own short action. |
+| **Unbounded `storeDays.listForStore` collect (drill-down)** | `.collect()`s every Store Day for a store with no bound and renders all of them (`storeDays.ts:16`). | Grows forever (~730 docs / 2yr); fine near-term but the reactive payload + client render degrade over years. | Paginate (`.paginate()`) + load-more / month grouping in the drill-down, like the Upload History fix. |
+
 ## Non-negotiable deviations (recorded, not debt)
 - buildmore stack → Convex/Clerk/Vercel (ADR-0001).
 - buildmore mobile-first → desktop-first responsive (ADR-0002).
