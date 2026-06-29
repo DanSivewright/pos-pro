@@ -51,7 +51,14 @@ async function recordParsedFile(
 // in the action — parsed, failed or unsupported — is recorded against it, so
 // the batch's fileCount is the total selected, not just the successes.
 export const createBatch = mutation({
-  args: { storeName: v.string(), fileCount: v.number() },
+  args: {
+    storeName: v.string(),
+    fileCount: v.number(),
+    // Display-only provenance resolved by the trusted upload route from Clerk;
+    // the authorising identity is still derived server-side (caller.subject +
+    // the active-org store), so this name never gates access.
+    uploaderName: v.optional(v.string()),
+  },
   returns: v.object({ uploadId: v.id("uploads") }),
   handler: async (ctx, args) => {
     const caller = await requireCaller(ctx);
@@ -59,6 +66,7 @@ export const createBatch = mutation({
     const uploadId = await ctx.db.insert("uploads", {
       storeId: store._id,
       uploadedBy: caller.subject,
+      uploaderName: args.uploaderName,
       fileCount: args.fileCount,
     });
     return { uploadId };

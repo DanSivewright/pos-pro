@@ -98,7 +98,12 @@ export default defineSchema({
   // A single upload action: a batch of one or more files for a Store.
   uploads: defineTable({
     storeId: v.id("stores"),
+    // The raw Clerk subject id — the immutable audit identity of the uploader.
     uploadedBy: v.string(),
+    // The uploader's human display name, denormalised at ingest from Clerk so the
+    // reactive history query never needs a Clerk fetch. Optional: absent on rows
+    // written before this field existed, where the UI falls back to the id.
+    uploaderName: v.optional(v.string()),
     fileCount: v.number(),
   }).index("by_storeId", ["storeId"]),
 

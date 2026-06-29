@@ -151,6 +151,29 @@ test("parsed, failed and unsupported files all appear with their shape", async (
   expect(failed?.reason).toBe("Could not read PDF");
 });
 
+test("history surfaces the uploader's display name, not the raw subject", async () => {
+  const t = convexTest(schema, modules);
+  const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+
+  // The route denormalises the resolved Clerk name onto the batch at ingest.
+  await asStore.mutation(api.ingest.createBatch, {
+    storeName: "Roman's Pizza Boitumelo",
+    fileCount: 1,
+    uploaderName: "Thabo Mokoena",
+  });
+  const storeId = await firstStoreId(t);
+
+  const { page } = await asStore.query(api.uploads.listForStore, {
+    storeId,
+    paginationOpts: FIRST_PAGE,
+  });
+
+  expect(page).toHaveLength(1);
+  expect(page[0]?.uploadedBy).toBe("Thabo Mokoena");
+  // The raw subject id is never surfaced once a name is denormalised.
+  expect(page[0]?.uploadedBy).not.toBe("user_a");
+});
+
 test("history pages through batches, then exhausts", async () => {
   const t = convexTest(schema, modules);
   const asStore = t.withIdentity({ subject: "user_a", org_id: "org_a" });

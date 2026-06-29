@@ -20,6 +20,14 @@ vi.mock("@clerk/nextjs/server", () => ({
     organizations: {
       getOrganization: vi.fn(async () => ({ name: "Boitumelo" })),
     },
+    users: {
+      getUser: vi.fn(async () => ({
+        fullName: "Thabo Mokoena",
+        username: null,
+        emailAddresses: [],
+        primaryEmailAddressId: null,
+      })),
+    },
   })),
 }));
 
@@ -106,10 +114,12 @@ describe("upload route — full pipeline", () => {
       SINGLE.stockWastage,
     ]);
 
-    // One batch opened for the whole action, sized to the file count.
+    // One batch opened for the whole action, sized to the file count and
+    // carrying the uploader's Clerk display name resolved by the route.
     expect(argsFor("ingest:createBatch")).toEqual({
       storeName: "Boitumelo",
       fileCount: 5,
+      uploaderName: "Thabo Mokoena",
     });
 
     // Each report dispatched to the correct mutation, carrying the real

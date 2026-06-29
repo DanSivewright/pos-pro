@@ -43,6 +43,33 @@ interface IngestContext {
   uploadId: Id<"uploads">;
 }
 
+// The subset of a Clerk user this route reads to label an upload. Typed
+// structurally so the route needn't depend on @clerk/backend directly.
+interface ClerkUploader {
+  emailAddresses: { emailAddress: string; id: string }[];
+  fullName: string | null;
+  primaryEmailAddressId: string | null;
+  username: string | null;
+}
+
+// The uploader's display name from Clerk, preferring a real name, then a
+// username, then the primary email. Returns undefined when none is set, leaving
+// the upload row's name blank so the history falls back to the subject id.
+function resolveUploaderName(user: ClerkUploader): string | undefined {
+  const fullName = user.fullName?.trim();
+  if (fullName) {
+    return fullName;
+  }
+  if (user.username) {
+    return user.username;
+  }
+  const primary =
+    user.emailAddresses.find(
+      (entry) => entry.id === user.primaryEmailAddressId
+    ) ?? user.emailAddresses[0];
+  return primary?.emailAddress;
+}
+
 // Records a file that never reached ingest against the batch, so a bad file in
 // a multi-file action is accounted for without blocking the others.
 async function recordUnparsed(
@@ -202,9 +229,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const client = await clerkClient();
-  const org = await client.organizations.getOrganization({
-    organizationId: orgId,
-  });
+  const [org, user] = await Promise.all([
+    client.organizations.getOrganization({ organizationId: orgId }),
+    client.users.getUser(userId),
+  ]);
+  const uploaderName = resolveUploaderName(user);
 
   const form = await request.formData();
   const files = form
@@ -229,7 +258,7 @@ export async function POST(request: Request): Promise<Response> {
   // is recorded against it.
   const { uploadId } = await fetchMutation(
     api.ingest.createBatch,
-    { storeName: org.name, fileCount: files.length },
+    { storeName: org.name, fileCount: files.length, uploaderName },
     { token }
   );
   const ctx: IngestContext = { storeName: org.name, token, uploadId };

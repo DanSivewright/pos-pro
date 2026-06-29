@@ -16,9 +16,9 @@ const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 // Each batch carries its files' provenance: the parse status, the report-type,
 // the resolved Store Day date (when the file landed on one) and the failure
 // reason. Raw file bytes are never retained, so this is purely a record of what
-// was submitted and whether it parsed. `uploadedBy` is the raw Clerk subject
-// id; resolving it to a human name needs a Clerk fetch (an action, not a
-// query) and is tracked as a follow-up in DEBT.md.
+// was submitted and whether it parsed. `uploadedBy` is the uploader's display
+// name, denormalised onto the row at ingest (#21); rows written before that
+// field existed fall back to the raw Clerk subject id.
 export const listForStore = query({
   args: { storeId: v.id("stores"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
@@ -59,7 +59,7 @@ export const listForStore = query({
         return {
           id: upload._id,
           uploadedAt: upload._creationTime,
-          uploadedBy: upload.uploadedBy,
+          uploadedBy: upload.uploaderName ?? upload.uploadedBy,
           fileCount: upload.fileCount,
           files,
         };
