@@ -3,6 +3,21 @@ import { internalQuery } from "./_generated/server";
 
 const MAX_STORES = 200;
 
+// One Store's digest input row: its name, its Clerk org (for the member
+// recipient lookup) and the latest figures the digest reasons over. Shared so
+// the fan-out `digest.sendOne` action can validate the store it receives.
+export const digestStoreValidator = v.object({
+  storeName: v.string(),
+  clerkOrgId: v.string(),
+  input: v.object({
+    netSales: v.union(v.number(), v.null()),
+    salesTarget: v.union(v.number(), v.null()),
+    gpPercent: v.union(v.number(), v.null()),
+    cashVariance: v.union(v.number(), v.null()),
+    stockVarianceTotal: v.union(v.number(), v.null()),
+  }),
+});
+
 // The latest Store Day per Store, flattened to the figures the digest reasons
 // over. Internal: the cron runs it with no caller, so it is never store-scoped
 // — it deliberately reads every Store to build the super-user's consolidated
@@ -11,19 +26,7 @@ const MAX_STORES = 200;
 // live in a "use node" file).
 export const dataForDigest = internalQuery({
   args: {},
-  returns: v.array(
-    v.object({
-      storeName: v.string(),
-      clerkOrgId: v.string(),
-      input: v.object({
-        netSales: v.union(v.number(), v.null()),
-        salesTarget: v.union(v.number(), v.null()),
-        gpPercent: v.union(v.number(), v.null()),
-        cashVariance: v.union(v.number(), v.null()),
-        stockVarianceTotal: v.union(v.number(), v.null()),
-      }),
-    })
-  ),
+  returns: v.array(digestStoreValidator),
   handler: async (ctx) => {
     const stores = await ctx.db.query("stores").take(MAX_STORES);
     const rows = await Promise.all(

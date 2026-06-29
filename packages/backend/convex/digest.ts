@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { digestStoreValidator } from "./digestData";
 import { renderDigestEmail } from "./emails/digestEmail";
 
 const MAX_MEMBERS = 200;
@@ -18,6 +19,27 @@ function sastDateLabel(): string {
     month: "long",
     year: "numeric",
   }).format(new Date());
+}
+
+function digestSubject(dateLabel: string): string {
+  return `Daily exception digest — ${dateLabel}`;
+}
+
+// The three env keys every send needs. Returned together so both the
+// orchestrator and each fanned-out send can degrade to a logged no-op when the
+// deployment has not yet configured email.
+function emailEnv(): {
+  clerkSecret: string;
+  resendKey: string;
+  from: string;
+} | null {
+  const clerkSecret = process.env.CLERK_SECRET_KEY;
+  const resendKey = process.env.RESEND_API_KEY;
+  const from = process.env.DIGEST_FROM_EMAIL;
+  if (!(clerkSecret && resendKey && from)) {
+    return null;
+  }
+  return { clerkSecret, resendKey, from };
 }
 
 async function clerkGet(
@@ -117,10 +139,8 @@ export const send = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
-    const resendKey = process.env.RESEND_API_KEY;
-    const from = process.env.DIGEST_FROM_EMAIL;
-    if (!(clerkSecret && resendKey && from)) {
+    const env = emailEnv();
+    if (env === null) {
       console.warn(
         "Digest skipped: missing CLERK_SECRET_KEY/RESEND_API_KEY/DIGEST_FROM_EMAIL"
       );
@@ -130,36 +150,65 @@ export const send = internalAction({
 
     const stores = await ctx.runQuery(internal.digestData.dataForDigest, {});
     const dateLabel = sastDateLabel();
-    const subject = `Daily exception digest — ${dateLabel}`;
+    const subject = digestSubject(dateLabel);
 
-    let failures = 0;
-
+    // The super-user consolidated digest is a single send, kept inline.
     const consolidated = await renderDigestEmail(stores, dateLabel, appUrl);
-    const superRecipients = await superuserEmails(clerkSecret);
-    const superOk = await sendEmail(
-      resendKey,
-      from,
+    const superRecipients = await superuserEmails(env.clerkSecret);
+    await sendEmail(
+      env.resendKey,
+      env.from,
       superRecipients,
       subject,
       consolidated
     );
-    if (!superOk) {
-      failures += 1;
-    }
 
+    // Fan the per-Store sends out: each becomes its own short action, so the
+    // run no longer serialises N Clerk + Resend round-trips behind one another
+    // (and one slow Store can't hold up the rest, nor trip the action time
+    // limit). This orchestrator returns as soon as the sends are scheduled.
     for (const store of stores) {
-      const html = await renderDigestEmail([store], dateLabel, appUrl);
-      const recipients = await orgMemberEmails(store.clerkOrgId, clerkSecret);
-      const ok = await sendEmail(resendKey, from, recipients, subject, html);
-      if (!ok) {
-        failures += 1;
-      }
+      await ctx.scheduler.runAfter(0, internal.digest.sendOne, {
+        store,
+        dateLabel,
+        appUrl,
+      });
     }
+    return null;
+  },
+});
 
-    if (failures > 0) {
-      console.error(
-        `Digest run completed with ${failures} failed send(s) — see errors above`
+// One Store's per-Store digest send, scheduled by `send`. Re-validates the
+// email env (defensive — it was present when scheduled) and degrades to a
+// logged no-op otherwise. A failed send is logged with the Store name on top of
+// the recipient/status line `sendEmail` already records, so the failure is
+// visible per Store in the Convex logs.
+export const sendOne = internalAction({
+  args: {
+    store: digestStoreValidator,
+    dateLabel: v.string(),
+    appUrl: v.union(v.string(), v.null()),
+  },
+  returns: v.null(),
+  handler: async (_ctx, { store, dateLabel, appUrl }) => {
+    const env = emailEnv();
+    if (env === null) {
+      console.warn(
+        `Digest send skipped for ${store.storeName}: missing email env`
       );
+      return null;
+    }
+    const html = await renderDigestEmail([store], dateLabel, appUrl);
+    const recipients = await orgMemberEmails(store.clerkOrgId, env.clerkSecret);
+    const ok = await sendEmail(
+      env.resendKey,
+      env.from,
+      recipients,
+      digestSubject(dateLabel),
+      html
+    );
+    if (!ok) {
+      console.error(`Digest send failed for store ${store.storeName}`);
     }
     return null;
   },
