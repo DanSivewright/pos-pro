@@ -74,6 +74,22 @@ test("send fans out one per-Store digest send per Store", async () => {
   ]);
 });
 
+test("the digest covers every Store past the old 200 cap", async () => {
+  const t = convexTest(schema, modules);
+  const COUNT = 250;
+  await t.run(async (ctx) => {
+    for (let i = 0; i < COUNT; i++) {
+      await ctx.db.insert("stores", {
+        name: `Store ${i}`,
+        clerkOrgId: `org_${i}`,
+      });
+    }
+  });
+
+  const rows = await t.query(internal.digestData.dataForDigest, {});
+  expect(rows).toHaveLength(COUNT);
+});
+
 test("send is a logged no-op when the email env is missing", async () => {
   const t = convexTest(schema, modules);
   // No env stubbed, and explicitly clear the key the deployment would set.

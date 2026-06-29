@@ -54,6 +54,26 @@ test("a super-user sees every Store", async () => {
   expect(stores).toHaveLength(2);
 });
 
+test("a super-user sees every Store past the old 200 cap", async () => {
+  const t = convexTest(schema, modules);
+  const COUNT = 250;
+  await t.run(async (ctx) => {
+    for (let i = 0; i < COUNT; i++) {
+      await ctx.db.insert("stores", {
+        clerkOrgId: `org_${i}`,
+        name: `Store ${i}`,
+      });
+    }
+  });
+
+  const asSuperuser = t.withIdentity({ subject: "owner", superuser: true });
+  const listed = await asSuperuser.query(api.stores.listPermitted, {});
+  const tiles = await asSuperuser.query(api.stores.controlTower, {});
+
+  expect(listed).toHaveLength(COUNT);
+  expect(tiles).toHaveLength(COUNT);
+});
+
 test("a user with no matching active org sees no Stores", async () => {
   const t = convexTest(schema, modules);
   await t.run(async (ctx) => {

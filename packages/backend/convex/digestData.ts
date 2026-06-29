@@ -1,8 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
 
-const MAX_STORES = 200;
-
 // One Store's digest input row: its name, its Clerk org (for the member
 // recipient lookup) and the latest figures the digest reasons over. Shared so
 // the fan-out `digest.sendOne` action can validate the store it receives.
@@ -20,15 +18,15 @@ export const digestStoreValidator = v.object({
 
 // The latest Store Day per Store, flattened to the figures the digest reasons
 // over. Internal: the cron runs it with no caller, so it is never store-scoped
-// — it deliberately reads every Store to build the super-user's consolidated
-// view and each Store's own section. Lives in the default V8 runtime; the
-// Node-runtime `digest.send` action reads it via ctx.runQuery (a query cannot
-// live in a "use node" file).
+// — it deliberately reads every Store (unbounded `.collect()`, no arbitrary
+// cap) to build the super-user's consolidated view and each Store's own
+// section. Lives in the default V8 runtime; the Node-runtime `digest.send`
+// action reads it via ctx.runQuery (a query cannot live in a "use node" file).
 export const dataForDigest = internalQuery({
   args: {},
   returns: v.array(digestStoreValidator),
   handler: async (ctx) => {
-    const stores = await ctx.db.query("stores").take(MAX_STORES);
+    const stores = await ctx.db.query("stores").collect();
     const rows = await Promise.all(
       stores.map(async (store) => {
         const latest = await ctx.db

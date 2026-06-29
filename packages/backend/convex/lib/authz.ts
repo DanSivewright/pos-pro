@@ -1,8 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-const MAX_STORES = 200;
-
 export interface Caller {
   orgId: string | null;
   subject: string;
@@ -64,13 +62,16 @@ export async function getOrCreateActiveStore(
 }
 
 // The Stores the caller may see: super-users see every Store; a store user
-// sees only the Store backing their active Clerk org.
+// sees only the Store backing their active Clerk org. The super-user read is an
+// unbounded `.collect()` — the Control Tower it feeds sorts every tile globally
+// worst-first, which a paginated read could not honour, and each tile is now a
+// single rollup point-read (#16), so the cost is one Store row per tile.
 export async function getPermittedStores(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"stores">[]> {
   const caller = await requireCaller(ctx);
   if (caller.superuser) {
-    return await ctx.db.query("stores").take(MAX_STORES);
+    return await ctx.db.query("stores").collect();
   }
   const { orgId } = caller;
   if (orgId === null) {

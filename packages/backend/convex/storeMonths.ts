@@ -3,8 +3,6 @@ import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { monthOf, recomputeStoreMonth } from "./lib/rollup";
 
-const MAX_STORES = 200;
-
 // Rebuilds the `storeMonths` rollup for every Store from its Store Days. Fans a
 // per-Store rebuild out via the scheduler (like the digest send) so each runs
 // in its own transaction — the orchestrator only reads the Store list, and no
@@ -15,7 +13,7 @@ export const backfill = internalMutation({
   args: {},
   returns: v.number(),
   handler: async (ctx) => {
-    const stores = await ctx.db.query("stores").take(MAX_STORES);
+    const stores = await ctx.db.query("stores").collect();
     for (const store of stores) {
       await ctx.scheduler.runAfter(0, internal.storeMonths.backfillStore, {
         storeId: store._id,
