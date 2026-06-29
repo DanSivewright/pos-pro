@@ -1,24 +1,31 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { getPermittedStores } from "./lib/authz";
 
-// The Store Days for one Store, newest first. Store-scoped: a caller only sees
-// days for a Store they are permitted to view (their active org, or any Store
-// for a super-user). An unpermitted storeId returns nothing rather than error.
+// The shape a paginated query must return to an unpermitted caller: a single
+// empty, exhausted page. Keeps the IDOR contract (returns nothing, never throws)
+// while staying compatible with `usePaginatedQuery` on the client.
+const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+
+// The Store Days for one Store, newest first, one page at a time. Store-scoped:
+// a caller only sees days for a Store they are permitted to view (their active
+// org, or any Store for a super-user). An unpermitted storeId returns an empty
+// page rather than error.
 export const listForStore = query({
-  args: { storeId: v.id("stores") },
+  args: { storeId: v.id("stores"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const permitted = await getPermittedStores(ctx);
     const allowed = permitted.some((store) => store._id === args.storeId);
     if (!allowed) {
-      return [];
+      return EMPTY_PAGE;
     }
-    const days = await ctx.db
+    const result = await ctx.db
       .query("storeDays")
       .withIndex("by_storeId_and_date", (q) => q.eq("storeId", args.storeId))
       .order("desc")
-      .collect();
-    return days.map((day) => ({
+      .paginate(args.paginationOpts);
+    const page = result.page.map((day) => ({
       id: day._id,
       date: day.date,
       netSales: day.netSales ?? null,
@@ -40,6 +47,7 @@ export const listForStore = query({
         stockWastage: day.wasteCost !== undefined,
       },
     }));
+    return { ...result, page };
   },
 });
 

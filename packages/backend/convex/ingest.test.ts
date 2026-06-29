@@ -415,8 +415,9 @@ test("completeness reflects which report-types a Store Day received", async () =
       .first()
       .then((s) => s?._id)
   );
-  const days = await asStore.query(api.storeDays.listForStore, {
+  const { page: days } = await asStore.query(api.storeDays.listForStore, {
     storeId: storeId as Id<"stores">,
+    paginationOpts: { numItems: 30, cursor: null },
   });
 
   expect(days[0]?.reports).toEqual({

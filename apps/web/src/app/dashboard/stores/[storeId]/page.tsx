@@ -4,7 +4,7 @@ import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
 import { Button } from "@pos-pro/ui/components/button";
 import { cn } from "@pos-pro/ui/lib/utils";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, use } from "react";
@@ -51,6 +51,9 @@ const rand = (cents: number | null) =>
   cents === null ? "—" : formatRand(cents);
 const pct = (value: number | null) => (value === null ? "—" : `${value}%`);
 
+// One month of days per page.
+const DAYS_PER_PAGE = 30;
+
 export default function StoreDrillDown({
   params,
 }: {
@@ -58,7 +61,15 @@ export default function StoreDrillDown({
 }) {
   const { storeId } = use(params);
   const storeRef = storeId as Id<"stores">;
-  const days = useQuery(api.storeDays.listForStore, { storeId: storeRef });
+  const {
+    results: days,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.storeDays.listForStore,
+    { storeId: storeRef },
+    { initialNumItems: DAYS_PER_PAGE }
+  );
   const tiles = useQuery(api.stores.controlTower);
   const storeName =
     tiles?.find((tile) => tile.id === storeRef)?.name ?? "Store";
@@ -80,13 +91,13 @@ export default function StoreDrillDown({
       />
       <Canvas>
         <div className="px-4 py-4 md:px-5">
-          {days === undefined && (
+          {status === "LoadingFirstPage" && (
             <p className="text-muted-foreground text-sm">Loading…</p>
           )}
-          {days?.length === 0 && (
+          {status !== "LoadingFirstPage" && days.length === 0 && (
             <p className="text-muted-foreground text-sm">No Store Days yet.</p>
           )}
-          {days !== undefined && days.length > 0 && (
+          {days.length > 0 && (
             <ul className="grid gap-3">
               {days.map((day) => (
                 <li
@@ -163,6 +174,18 @@ export default function StoreDrillDown({
                 </li>
               ))}
             </ul>
+          )}
+          {(status === "CanLoadMore" || status === "LoadingMore") && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                data-testid="load-more-days"
+                disabled={status === "LoadingMore"}
+                onClick={() => loadMore(DAYS_PER_PAGE)}
+                variant="outline"
+              >
+                {status === "LoadingMore" ? "Loading…" : "Load more"}
+              </Button>
+            </div>
           )}
           <div className="mt-8 border-border border-t pt-6">
             <UploadHistory storeId={storeRef} />
