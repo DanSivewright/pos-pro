@@ -3,6 +3,7 @@ import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
 import { fetchMutation } from "convex/nextjs";
 import { NextResponse } from "next/server";
+import { mapWithConcurrency } from "@/lib/concurrency";
 import { detectReportType } from "@/lib/extraction/detect-report-type";
 import { parseCashup } from "@/lib/extraction/parse-cashup";
 import { parseGrossProfit } from "@/lib/extraction/parse-gross-profit";
@@ -13,6 +14,14 @@ import { extractPdfText } from "@/lib/extraction/pdf-text";
 
 // Parsing runs in this Node boundary, in memory; raw bytes are never persisted.
 export const runtime = "nodejs";
+
+// How many files a single upload batch processes at once. Each file does an
+// in-memory PDF extraction plus a Convex round-trip; a small pool keeps a large
+// batch off the serverless timeout without exhausting memory on big PDFs. The
+// per-file ingest mutations are independent Convex transactions (OCC-safe), so
+// concurrency cannot lose data — only the result array order is pinned to the
+// input order, below.
+const UPLOAD_CONCURRENCY = 5;
 
 interface FileResult {
   date?: string;
@@ -198,10 +207,10 @@ export async function POST(request: Request): Promise<Response> {
   );
   const ctx: IngestContext = { storeName: org.name, token, uploadId };
 
-  const results: FileResult[] = [];
-  for (const file of files) {
-    results.push(await ingestFile(file, ctx));
-  }
+  // Process the batch with bounded concurrency; results stay in input order.
+  const results = await mapWithConcurrency(files, UPLOAD_CONCURRENCY, (file) =>
+    ingestFile(file, ctx)
+  );
 
   return NextResponse.json({ results });
 }
