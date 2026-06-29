@@ -3,6 +3,14 @@
   "extends": ["ultracite/biome/core", "ultracite/biome/next"],
   "overrides": [
     {
+      // Hand-authored HTML design prototypes — not app code. The Biome HTML
+      // formatter re-indents their embedded CSS comments / JS template-literal
+      // strings on every save, growing leading whitespace endlessly. Leave them
+      // alone so they stop showing up as phantom whitespace-only diffs.
+      "includes": ["_design/**"],
+      "formatter": { "enabled": false }
+    },
+    {
       // Vendored shadcn/ui registry components — mirrored from the shadcn CLI,
       // not hand-authored. Their generated patterns (React namespace imports,
       // dangerouslySetInnerHTML for theme CSS, ARIA role primitives, cookie
