@@ -7,6 +7,7 @@ import {
   getPermittedStores,
   requireCaller,
 } from "./lib/authz";
+import { monthOf, recomputeStoreMonth } from "./lib/rollup";
 
 type ReportType =
   | "cashup"
@@ -179,6 +180,9 @@ export const cashup = mutation({
     } else {
       await ctx.db.patch(storeDayId, fields);
     }
+
+    // Cashup owns net sales; keep the month rollup current.
+    await recomputeStoreMonth(ctx, store._id, monthOf(args.extract.date));
 
     await recordParsedFile(ctx, {
       batchUploadId: args.uploadId,
@@ -413,6 +417,9 @@ export const grossProfit = mutation({
     } else {
       await ctx.db.patch(storeDayId, fields);
     }
+
+    // Gross Profit owns GP%; keep the month rollup current.
+    await recomputeStoreMonth(ctx, store._id, monthOf(args.extract.date));
 
     // The per-item set is fully replaced on each parse by the owning provider.
     const stale = await ctx.db

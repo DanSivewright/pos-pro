@@ -1,10 +1,26 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// The Control Tower reads the denormalised `storeMonths` rollup, which the
+// ingest mutations maintain. Tests that seed Store Days directly rebuild the
+// rollup by running the per-Store backfill the orchestrator fans out (called
+// directly here so the rebuild is deterministic without driving the scheduler).
+async function refreshRollups(t: ReturnType<typeof convexTest>): Promise<void> {
+  const storeIds = await t.run((ctx) =>
+    ctx.db
+      .query("stores")
+      .collect()
+      .then((stores) => stores.map((store) => store._id))
+  );
+  for (const storeId of storeIds) {
+    await t.mutation(internal.storeMonths.backfillStore, { storeId });
+  }
+}
 
 test("a store user sees only their own Store", async () => {
   const t = convexTest(schema, modules);
@@ -103,6 +119,7 @@ test("the Control Tower shows a super-user every Store, worst-first", async () =
       netSales: 75_000,
     });
   });
+  await refreshRollups(t);
 
   const asSuperuser = t.withIdentity({ subject: "owner", superuser: true });
   const tiles = await asSuperuser.query(api.stores.controlTower, {});
@@ -136,6 +153,7 @@ test("the Control Tower sums net sales month-to-date and computes vs-target", as
     });
     return id;
   });
+  await refreshRollups(t);
 
   const asStoreA = t.withIdentity({ subject: "user_a", org_id: "org_a" });
   const [tile] = await asStoreA.query(api.stores.controlTower, {});
@@ -161,6 +179,7 @@ test("setting a Store's sales target changes its vs-target", async () => {
     });
     return id;
   });
+  await refreshRollups(t);
 
   const asSuperuser = t.withIdentity({ subject: "owner", superuser: true });
   await asSuperuser.mutation(api.stores.setSalesTarget, {

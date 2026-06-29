@@ -45,35 +45,25 @@ interface ControlTowerTile {
   vsTarget: number | null;
 }
 
-// The month-to-date rollup for one Store: summed net sales, the most recent
-// in-month GP%, and the deviation-from-target status.
+// The month-to-date tile for one Store, read from the denormalised `storeMonths`
+// rollup — a single indexed point-read per Store, rather than scanning the
+// month's Store Days. The rollup is kept current by the ingest mutations; a
+// Store with no rollup row yet (no Cashup/GP this month) reads as zero net /
+// no GP%.
 async function buildTile(
   ctx: QueryCtx,
   store: Doc<"stores">,
   month: string
 ): Promise<ControlTowerTile> {
-  const days = await ctx.db
-    .query("storeDays")
-    .withIndex("by_storeId_and_date", (q) =>
-      q
-        .eq("storeId", store._id)
-        .gte("date", `${month}-01`)
-        .lte("date", `${month}-31`)
+  const rollup = await ctx.db
+    .query("storeMonths")
+    .withIndex("by_storeId_and_month", (q) =>
+      q.eq("storeId", store._id).eq("month", month)
     )
-    .order("desc")
-    .collect();
+    .unique();
 
-  let mtdNet = 0;
-  let gpPercent: number | null = null;
-  for (const day of days) {
-    if (day.netSales !== undefined) {
-      mtdNet += day.netSales;
-    }
-    // Days are newest-first, so the first GP% seen is the latest in month.
-    if (gpPercent === null && day.gpPercent !== undefined) {
-      gpPercent = day.gpPercent;
-    }
-  }
+  const mtdNet = rollup?.mtdNet ?? 0;
+  const gpPercent = rollup?.latestGpPercent ?? null;
 
   const salesTarget = store.salesTarget ?? null;
   const vsTarget = salesTarget === null ? null : mtdNet - salesTarget;

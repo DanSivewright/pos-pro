@@ -67,6 +67,18 @@ export default defineSchema({
     wasteCost: v.optional(v.number()),
   }).index("by_storeId_and_date", ["storeId", "date"]),
 
+  // A denormalised month-to-date rollup per Store, so the Control Tower reads
+  // one row per Store instead of fanning out a month-range scan over every
+  // Store Day. Maintained by the ingest mutations that change a Store Day's
+  // net sales (Cashup) or GP% (Gross Profit), and rebuilt by the backfill.
+  // Derived state only — `storeDays` remains the source of truth.
+  storeMonths: defineTable({
+    storeId: v.id("stores"),
+    month: v.string(), // "YYYY-MM" in Africa/Johannesburg
+    mtdNet: v.number(), // summed Cashup net sales for the month, cents
+    latestGpPercent: v.optional(v.number()), // most recent in-month GP%
+  }).index("by_storeId_and_month", ["storeId", "month"]),
+
   // Per-item stock variance rows for a Store Day. Fully replaced on each parse
   // by the owning provider (Gross Profit or Stock Variance). `variance` (cents)
   // and `variancePercent` are common to both providers; `actualCos`/
