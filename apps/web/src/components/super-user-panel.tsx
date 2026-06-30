@@ -8,7 +8,7 @@ import {
 } from "@pos-pro/ui/components/card";
 import { SuperUserSwitch } from "@/components/super-user-switch";
 import { resolveUserName } from "@/lib/clerk-user";
-import { getCaller } from "@/lib/superuser";
+import { getCaller, isSuperuser } from "@/lib/superuser";
 
 // How many users the panel lists. The operator population is tiny; if it grows
 // past this the list would silently truncate, so paginate before then.
@@ -41,7 +41,7 @@ export async function SuperUserPanel() {
       (entry) => entry.id === user.primaryEmailAddressId
     )?.emailAddress,
     id: user.id,
-    isSuperuser: user.publicMetadata?.superuser === true,
+    isSuperuser: isSuperuser(user),
     name: resolveUserName(user) ?? user.id,
   }));
   const superCount = rows.filter((row) => row.isSuperuser).length;
@@ -83,12 +83,8 @@ export async function SuperUserPanel() {
                 )}
               </div>
               <SuperUserSwitch
-                // Remount on server-truth change so a successful toggle's
-                // revalidation always re-seeds the optimistic state — no stale
-                // switch can linger out of sync with Clerk.
                 checked={row.isSuperuser}
                 disabled={isSelf || isLastSuper}
-                key={`${row.id}-${row.isSuperuser}`}
                 userId={row.id}
               />
             </div>

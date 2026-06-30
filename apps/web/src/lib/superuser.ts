@@ -5,6 +5,16 @@ export interface Caller {
   userId: string | null;
 }
 
+// The single definition of what makes a user a super-user: the Clerk public
+// metadata flag the session-token template mirrors. Shared by getCaller, the
+// panel, and the grant/revoke action so the predicate can never drift between
+// call sites.
+export function isSuperuser(user: {
+  publicMetadata?: { superuser?: unknown };
+}): boolean {
+  return user.publicMetadata?.superuser === true;
+}
+
 // Resolves the signed-in caller and whether they hold cross-org super-user
 // access. The flag is read from Clerk public metadata server-side — the source
 // of truth the session-token template mirrors — never from a client-supplied
@@ -17,5 +27,5 @@ export async function getCaller(): Promise<Caller> {
   }
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
-  return { isSuperuser: user.publicMetadata?.superuser === true, userId };
+  return { isSuperuser: isSuperuser(user), userId };
 }
