@@ -5,6 +5,7 @@ import { mutation, query } from "./_generated/server";
 import { getPermittedStores, requireCaller } from "./lib/authz";
 import {
   computeStatus,
+  DEFAULT_THRESHOLDS,
   resolveThresholds,
   STATUS_RANK,
   type Status,
@@ -37,6 +38,37 @@ export const isSuperuser = query({
   handler: async (ctx) => {
     const caller = await requireCaller(ctx);
     return caller.superuser;
+  },
+});
+
+// The threshold-editor data for one Store: its current per-band overrides (null
+// where it inherits the global default) and the defaults themselves, so the
+// editor can show each default as a placeholder. Super-users only — the editor
+// is theirs, and `setThresholds` re-checks. A store user is rejected.
+export const getThresholds = query({
+  args: { storeId: v.id("stores") },
+  handler: async (ctx, args) => {
+    const caller = await requireCaller(ctx);
+    if (!caller.superuser) {
+      throw new Error("Only super-users may view thresholds");
+    }
+    const store = await ctx.db.get(args.storeId);
+    if (store === null) {
+      throw new Error("Store not found");
+    }
+    return {
+      overrides: {
+        salesWatchDeviation: store.salesWatchDeviation ?? null,
+        salesCriticalDeviation: store.salesCriticalDeviation ?? null,
+        gpWatchPercent: store.gpWatchPercent ?? null,
+        gpCriticalPercent: store.gpCriticalPercent ?? null,
+        cashWatchCents: store.cashWatchCents ?? null,
+        cashCriticalCents: store.cashCriticalCents ?? null,
+        stockWatchCents: store.stockWatchCents ?? null,
+        stockCriticalCents: store.stockCriticalCents ?? null,
+      },
+      defaults: DEFAULT_THRESHOLDS,
+    };
   },
 });
 

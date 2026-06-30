@@ -268,6 +268,42 @@ test("a per-store threshold override changes the Control Tower status, then rese
   expect(reset[0]?.status).toBe("green");
 });
 
+test("getThresholds returns a Store's overrides and the defaults for a super-user", async () => {
+  const t = convexTest(schema, modules);
+  const storeId = await t.run(async (ctx) =>
+    ctx.db.insert("stores", {
+      clerkOrgId: "org_a",
+      name: "Store A",
+      gpWatchPercent: 60,
+    })
+  );
+
+  const asSuperuser = t.withIdentity({ subject: "owner", superuser: true });
+  const { overrides, defaults } = await asSuperuser.query(
+    api.stores.getThresholds,
+    { storeId }
+  );
+
+  // The set band reads back; an unset band is null (inherits the default).
+  expect(overrides.gpWatchPercent).toBe(60);
+  expect(overrides.cashWatchCents).toBeNull();
+  // The defaults are surfaced for the editor's placeholders.
+  expect(defaults.gpWatchPercent).toBe(55);
+  expect(defaults.cashWatchCents).toBe(3000);
+});
+
+test("a store user may not view thresholds", async () => {
+  const t = convexTest(schema, modules);
+  const storeId = await t.run(async (ctx) =>
+    ctx.db.insert("stores", { clerkOrgId: "org_a", name: "Store A" })
+  );
+
+  const asStoreA = t.withIdentity({ subject: "user_a", org_id: "org_a" });
+  await expect(
+    asStoreA.query(api.stores.getThresholds, { storeId })
+  ).rejects.toThrow("super-users");
+});
+
 test("a store user may not set thresholds", async () => {
   const t = convexTest(schema, modules);
   const storeId = await t.run(async (ctx) =>

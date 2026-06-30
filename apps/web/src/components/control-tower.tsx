@@ -15,6 +15,7 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { MetricLabel } from "@/components/metric-hint";
+import { ThresholdEditor } from "@/components/threshold-editor";
 import { formatRand } from "@/lib/format";
 
 const CENTS_PER_RAND = 100;
@@ -166,7 +167,10 @@ function StoreTableRow({ tile, canEdit }: { tile: Tile; canEdit: boolean }) {
       </TableCell>
       {canEdit && (
         <TableCell className="text-right">
-          <SalesTargetEditor tile={tile} />
+          <div className="flex items-center justify-end gap-1.5">
+            <SalesTargetEditor tile={tile} />
+            <ThresholdEditor storeId={tile.id} />
+          </div>
         </TableCell>
       )}
     </TableRow>
@@ -268,7 +272,9 @@ export function ControlTower() {
             </TableHead>
             {canEdit && (
               <TableHead className="text-right">
-                <MetricLabel hintKey="target">Target</MetricLabel>
+                <MetricLabel hintKey="target">
+                  Target &amp; thresholds
+                </MetricLabel>
               </TableHead>
             )}
           </TableRow>
