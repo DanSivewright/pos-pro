@@ -3,6 +3,7 @@ import { api } from "@pos-pro/backend/convex/_generated/api";
 import type { Id } from "@pos-pro/backend/convex/_generated/dataModel";
 import { fetchMutation } from "convex/nextjs";
 import { NextResponse } from "next/server";
+import { resolveUserName } from "@/lib/clerk-user";
 import { mapWithConcurrency } from "@/lib/concurrency";
 import { detectReportType } from "@/lib/extraction/detect-report-type";
 import { parseCashup } from "@/lib/extraction/parse-cashup";
@@ -41,33 +42,6 @@ interface IngestContext {
   storeName: string;
   token: string;
   uploadId: Id<"uploads">;
-}
-
-// The subset of a Clerk user this route reads to label an upload. Typed
-// structurally so the route needn't depend on @clerk/backend directly.
-interface ClerkUploader {
-  emailAddresses: { emailAddress: string; id: string }[];
-  fullName: string | null;
-  primaryEmailAddressId: string | null;
-  username: string | null;
-}
-
-// The uploader's display name from Clerk, preferring a real name, then a
-// username, then the primary email. Returns undefined when none is set, leaving
-// the upload row's name blank so the history falls back to the subject id.
-function resolveUploaderName(user: ClerkUploader): string | undefined {
-  const fullName = user.fullName?.trim();
-  if (fullName) {
-    return fullName;
-  }
-  if (user.username) {
-    return user.username;
-  }
-  const primary =
-    user.emailAddresses.find(
-      (entry) => entry.id === user.primaryEmailAddressId
-    ) ?? user.emailAddresses[0];
-  return primary?.emailAddress;
 }
 
 // Records a file that never reached ingest against the batch, so a bad file in
@@ -233,7 +207,7 @@ export async function POST(request: Request): Promise<Response> {
     client.organizations.getOrganization({ organizationId: orgId }),
     client.users.getUser(userId),
   ]);
-  const uploaderName = resolveUploaderName(user);
+  const uploaderName = resolveUserName(user);
 
   const form = await request.formData();
   const files = form
