@@ -83,8 +83,12 @@ export async function SuperUserPanel() {
                 )}
               </div>
               <SuperUserSwitch
+                // Remount on server-truth change so a successful toggle's
+                // revalidation always re-seeds the optimistic state — no stale
+                // switch can linger out of sync with Clerk.
                 checked={row.isSuperuser}
                 disabled={isSelf || isLastSuper}
+                key={`${row.id}-${row.isSuperuser}`}
                 userId={row.id}
               />
             </div>

@@ -31,13 +31,17 @@ function callerIsSuper(isSuperuser: boolean) {
   getUser.mockResolvedValue({ publicMetadata: { superuser: isSuperuser } });
 }
 
-function userList(...users: { id: string; superuser: boolean }[]) {
-  getUserList.mockResolvedValue({
+function usersData(...users: { id: string; superuser: boolean }[]) {
+  return {
     data: users.map((user) => ({
       id: user.id,
       publicMetadata: { superuser: user.superuser },
     })),
-  });
+  };
+}
+
+function userList(...users: { id: string; superuser: boolean }[]) {
+  getUserList.mockResolvedValue(usersData(...users));
 }
 
 describe("setSuperuser", () => {
@@ -88,5 +92,27 @@ describe("setSuperuser", () => {
       publicMetadata: { superuser: false },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("rolls back its own demote if a concurrent demote emptied the roster", async () => {
+    callerIsSuper(true);
+    // Pre-check sees two supers; by the post-write re-count a racing demote has
+    // left none, so the action must undo its own write.
+    getUserList
+      .mockResolvedValueOnce(
+        usersData(
+          { id: "caller", superuser: true },
+          { id: "target", superuser: true }
+        )
+      )
+      .mockResolvedValueOnce(usersData());
+    await expect(setSuperuser("target", false)).rejects.toThrow(LAST_SUPERUSER);
+    expect(updateUserMetadata).toHaveBeenNthCalledWith(1, "target", {
+      publicMetadata: { superuser: false },
+    });
+    expect(updateUserMetadata).toHaveBeenNthCalledWith(2, "target", {
+      publicMetadata: { superuser: true },
+    });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
